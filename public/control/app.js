@@ -347,11 +347,13 @@ function montarAjustes(estado) {
 
   $('#cfgCompeticao').value = estado.config.competicao || '';
   $('#cfgLocal').value = estado.config.local || '';
-  for (const campo of ['cfgCompeticao', 'cfgLocal']) {
+  $('#cfgAcento').value = estado.config.acento || '#17b64a';
+  for (const campo of ['cfgCompeticao', 'cfgLocal', 'cfgAcento']) {
     $(`#${campo}`).addEventListener('change', () => {
       DuStats.salvarConfig({
         competicao: $('#cfgCompeticao').value,
-        local: $('#cfgLocal').value
+        local: $('#cfgLocal').value,
+        acento: $('#cfgAcento').value
       });
     });
   }

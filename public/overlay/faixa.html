@@ -12,28 +12,51 @@
    * Fica ancorada no RODAPÉ porque o Placar PRO ocupa o canto superior
    * esquerdo. As duas peças nunca se tocam: uma mora em cima, a outra embaixo.
    */
+  /* Mesma forma do overlay do placar: navy em degradê, borda, e a faixa
+     clara no topo com um trecho na cor da transmissão. */
   #faixa {
     position: absolute;
     left: var(--lado-esq, 60px);
     right: var(--lado-dir, auto);
     bottom: var(--baixo, 96px);
     width: 880px;
-    padding: 18px 26px 20px;
-    border-radius: 10px;
-    background: var(--painel);
+    padding: 0 0 18px;
+    border-radius: 8px;
+    background: linear-gradient(180deg, var(--navy-claro) 0%, var(--navy) 62%);
+    border: 1px solid var(--navy-borda);
     box-shadow: var(--sombra);
+    overflow: hidden;
     opacity: 0;
     transform: translateX(-70px);
     transition: opacity 340ms ease, transform 520ms cubic-bezier(.22, 1, .36, 1);
   }
   #faixa.no-ar { opacity: 1; transform: none; }
 
+  #faixa::before {
+    content: '';
+    position: absolute; inset: 0 0 auto;
+    height: 3px;
+    background: linear-gradient(90deg,
+      var(--acento) 0%, var(--acento) 26%,
+      rgba(255, 255, 255, .85) 26%, rgba(255, 255, 255, .85) 100%);
+  }
+
+  /* O rótulo mora numa tarja própria, como o chip "1T" do placar. */
   .rotulo-faixa {
-    font-size: 17px;
-    letter-spacing: .18em;
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 26px 10px;
+    margin-bottom: 16px;
+    background: rgba(0, 0, 0, .26);
+    font-size: 16px;
+    letter-spacing: .2em;
     text-transform: uppercase;
-    color: var(--texto-fraco);
-    margin-bottom: 12px;
+    color: #fff;
+    font-weight: 700;
+  }
+  .rotulo-faixa::before {
+    content: '';
+    width: 5px; height: 17px; border-radius: 2px;
+    background: var(--acento);
   }
 
   .linha-faixa {
@@ -41,6 +64,7 @@
     grid-template-columns: auto 96px 1fr 96px auto;
     align-items: center;
     gap: 18px;
+    padding: 0 26px;
   }
 
   .time-faixa {
@@ -70,7 +94,7 @@
 <body class="overlay">
 
 <div id="faixa">
-  <div class="rotulo-faixa" id="rotulo"></div>
+  <div class="rotulo-faixa"><span id="rotulo"></span></div>
   <div class="linha-faixa">
     <span class="time-faixa casa" style="--cor: var(--cor-casa)"><i></i><span id="siglaCasa"></span></span>
     <span class="valor-faixa esq num" id="valorCasa"></span>

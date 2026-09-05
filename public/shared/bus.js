@@ -118,13 +118,29 @@
     for (const fn of ouvintes.conexao) fn(saudavel, lerFila().length);
   }
 
-  /** Cores dos times viram variáveis CSS, para o resto do sistema só usar var(). */
+  /** Escurece um hex, para derivar o tom de apoio do acento sem pedir dois. */
+  function escurecer(hex, fator = 0.62) {
+    const casa = /^#?([0-9a-f]{6})$/i.exec(hex || '');
+    if (!casa) return hex;
+    const n = parseInt(casa[1], 16);
+    const canal = (deslocamento) =>
+      Math.round(((n >> deslocamento) & 255) * fator).toString(16).padStart(2, '0');
+    return `#${canal(16)}${canal(8)}${canal(0)}`;
+  }
+
+  /** Cores viram variáveis CSS, para o resto do sistema só usar var(). */
   function aplicarCores(e) {
     const raiz = document.documentElement.style;
     raiz.setProperty('--cor-casa', e.config?.casa?.cor || '#1f6feb');
     raiz.setProperty('--cor-fora', e.config?.fora?.cor || '#d92d20');
     raiz.setProperty('--texto-casa', e.config?.casa?.corTexto || '#ffffff');
     raiz.setProperty('--texto-fora', e.config?.fora?.corTexto || '#ffffff');
+
+    // A cor da transmissão (o verde do Marrentão) é do canal, não da partida:
+    // ela não muda quando os times mudam.
+    const acento = e.config?.acento || '#17b64a';
+    raiz.setProperty('--acento', acento);
+    raiz.setProperty('--acento-escuro', escurecer(acento));
   }
 
   // ------------------------------------------------------------------- api

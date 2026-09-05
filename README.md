@@ -38,7 +38,7 @@ git checkout af5def7 -- public/overlay/placar.html public/overlay/evento.html
 | Overlay | Quando aparece | O que mostra |
 |---|---|---|
 | `faixa.html` | quando você chama, por 10 s | Uma estatística no rodapé: posse, finalizações, chutes no gol, escanteios, faltas ou cartões |
-| `intervalo.html` | modo **Intervalo** | Carrossel em tela cheia: comparativo → mapa de chutes → pressão → gols e cartões |
+| `intervalo.html` | modo **Intervalo** | Card flutuante no centro: comparativo → mapa de chutes → pressão → gols e cartões |
 | `resumo.html` | modo **Resumo** | O mesmo carrossel com o jogo inteiro, mais a exportação |
 
 Os dois primeiros ficam na **mesma cena do OBS o tempo todo** e decidem sozinhos
@@ -87,16 +87,19 @@ Para cada um dos dois overlays:
 Na mesma cena, de cima para baixo:
 
 ```
-1. DuStats — intervalo     tela cheia
-2. Placar PRO              canto superior esquerdo
+1. Placar PRO              canto superior esquerdo
+2. DuStats — intervalo     card flutuante no centro
 3. DuStats — faixa         rodapé
 4. Câmera
 ```
 
-O painel do intervalo precisa ficar **acima** do Placar PRO, senão o placar
-dele flutua por cima da tela cheia de estatísticas. A faixa fica abaixo por
-segurança — mas como uma mora no rodapé e o outro no topo, as duas nunca se
-tocam. O fundo dos dois já é transparente.
+O **Placar PRO fica por cima**. O painel do intervalo não é mais tela cheia:
+é um card flutuante posicionado abaixo do canto do placar, e ele escurece de
+leve o resto da imagem para destacar. Deixando o Placar PRO acima, o placar
+continua nítido durante todo o intervalo em vez de ficar sob o escurecimento.
+
+A faixa mora no rodapé e o placar no topo — nunca se tocam. O fundo dos dois
+overlays do DuStats já é transparente.
 
 ### Ajustes por URL
 
@@ -106,6 +109,21 @@ tocam. O fundo dos dois já é transparente.
 | `faixa.html?baixo=200` | Sobe a faixa, se você usa o lower third do Placar PRO no rodapé |
 | `faixa.html?segundos=8` | Muda quanto tempo a faixa fica no ar |
 | `resumo.html?exportar=1` | Mostra os botões de exportação (abra no navegador, **não** no OBS) |
+
+### Identidade visual
+
+Os gráficos usam a mesma linguagem do overlay do Placar PRO — base navy em
+blocos, faixa clara no topo de cada peça, texto branco pesado — para as duas
+coisas parecerem do mesmo pacote gráfico em vez de dois sistemas colados.
+
+O **verde do Marrentão** é a cor de acento: aparece na faixa do topo, no rótulo
+da faixa do rodapé e nos pontinhos do carrossel. Ele **nunca entra nos números**,
+que continuam falando na cor dos times — jogar uma terceira cor no meio dos
+dados confunde a leitura justo onde ela precisa ser instantânea.
+
+Para casar exatamente com o verde do seu overlay: **Ajustes → Cor da
+transmissão**. Tire um print do Placar PRO no ar e pegue a cor com um
+conta-gotas.
 
 ## Durante o jogo
 

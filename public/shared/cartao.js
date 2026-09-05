@@ -26,6 +26,11 @@
     return config?.[lado]?.cor || padrao;
   }
 
+  /* Mesma paleta dos overlays, para o post não parecer de outro sistema. */
+  const NAVY_TOPO = '#1d2a5e';
+  const NAVY_BASE = '#0b1130';
+  const NAVY_BLOCO = 'rgba(0, 0, 0, .3)';
+
   function escreve(ctx, texto, x, y, { tamanho = 32, peso = 400, cor = '#fff', alinha = 'center', espaco = 0 }) {
     ctx.save();
     ctx.font = `${peso} ${tamanho}px ${FONTE}`;
@@ -84,30 +89,36 @@
     const corCasa = corDoTime(estado.config, 'casa', '#1f6feb');
     const corFora = corDoTime(estado.config, 'fora', '#d92d20');
 
+    const acento = estado.config?.acento || '#17b64a';
+
     const fundo = ctx.createLinearGradient(0, 0, 0, LADO);
-    fundo.addColorStop(0, '#131c29');
-    fundo.addColorStop(1, '#05070b');
+    fundo.addColorStop(0, NAVY_TOPO);
+    fundo.addColorStop(0.5, '#141d45');
+    fundo.addColorStop(1, NAVY_BASE);
     ctx.fillStyle = fundo;
     ctx.fillRect(0, 0, LADO, LADO);
 
-    // Faixas das cores dos times nas bordas: identifica o jogo de longe.
-    caixa(ctx, 0, 0, LADO / 2, 10, 0, corCasa);
-    caixa(ctx, LADO / 2, 0, LADO / 2, 10, 0, corFora);
+    // A faixa do topo — acento da transmissão à esquerda, branco no resto.
+    // É a mesma assinatura de forma do painel e da faixa do rodapé.
+    caixa(ctx, 0, 0, LADO * 0.26, 10, 0, acento);
+    caixa(ctx, LADO * 0.26, 0, LADO * 0.74, 10, 0, 'rgba(255,255,255,.85)');
 
     const cabecalho = [estado.config.competicao, estado.config.local].filter(Boolean).join('  ·  ');
-    escreve(ctx, cabecalho.toUpperCase(), LADO / 2, 82, { tamanho: 25, cor: '#8d97a5', espaco: 4 });
+    escreve(ctx, cabecalho.toUpperCase(), LADO / 2, 82, { tamanho: 25, cor: '#93a0c4', espaco: 4 });
 
     // --------------------------------------------------------------- placar
     await desenharEscudo(ctx, estado, 'casa', 168, 208, 128);
     await desenharEscudo(ctx, estado, 'fora', LADO - 168, 208, 128);
 
+    // Bloco do placar num tom próprio, como o "2 x 0" do overlay do placar.
+    caixa(ctx, LADO / 2 - 170, 112, 340, 150, 8, NAVY_BLOCO);
     escreve(ctx, `${estado.placar.casa}`, LADO / 2 - 88, 240, { tamanho: 132, peso: 700 });
     escreve(ctx, '×', LADO / 2, 228, { tamanho: 58, cor: 'rgba(255,255,255,.3)' });
     escreve(ctx, `${estado.placar.fora}`, LADO / 2 + 88, 240, { tamanho: 132, peso: 700 });
 
     escreve(ctx, global.DuStats.overlay.nome(estado.config, 'casa').toUpperCase(), 168, 316, { tamanho: 27, peso: 700 });
     escreve(ctx, global.DuStats.overlay.nome(estado.config, 'fora').toUpperCase(), LADO - 168, 316, { tamanho: 27, peso: 700 });
-    escreve(ctx, titulo.toUpperCase(), LADO / 2, 316, { tamanho: 22, cor: '#8d97a5', espaco: 3 });
+    escreve(ctx, titulo.toUpperCase(), LADO / 2, 316, { tamanho: 22, cor: acento, espaco: 3 });
 
     // ---------------------------------------------------------- estatísticas
     const linhas = estado.comparativo.filter((l) => l.barra).slice(0, 7);
@@ -122,11 +133,11 @@
 
       escreve(ctx, `${linha.casa}${sufixo}`, 150, y + 26, { tamanho: 38, peso: 700, alinha: 'right' });
       escreve(ctx, `${linha.fora}${sufixo}`, LADO - 150, y + 26, { tamanho: 38, peso: 700, alinha: 'left' });
-      escreve(ctx, linha.rotulo.toUpperCase(), LADO / 2, y + 8, { tamanho: 19, cor: '#8d97a5', espaco: 2.5 });
+      escreve(ctx, linha.rotulo.toUpperCase(), LADO / 2, y + 8, { tamanho: 19, cor: '#93a0c4', espaco: 2.5 });
 
       const barraX = 178;
       const barraL = LADO - barraX * 2;
-      caixa(ctx, barraX, y + 22, barraL, 11, 6, 'rgba(255,255,255,.09)');
+      caixa(ctx, barraX, y + 22, barraL, 11, 6, 'rgba(0,0,0,.34)');
       caixa(ctx, barraX, y + 22, barraL * fatia, 11, 6, corCasa);
       caixa(ctx, barraX + barraL * fatia, y + 22, barraL * (1 - fatia), 11, 6, corFora);
     });
@@ -134,8 +145,10 @@
     // ----------------------------------------------------------------- gols
     const gols = estado.linhaDoTempo.filter((i) => i.tipo === 'gol');
     if (gols.length > 0) {
-      caixa(ctx, 100, 812, LADO - 200, 2, 1, 'rgba(255,255,255,.12)');
-      escreve(ctx, 'GOLS', LADO / 2, 862, { tamanho: 20, cor: '#8d97a5', espaco: 3 });
+      caixa(ctx, 100, 812, LADO - 200, 2, 1, 'rgba(255,255,255,.14)');
+      // Marca de acento ao lado do título, no desenho do chip verde do placar.
+      caixa(ctx, LADO / 2 - 66, 848, 5, 20, 2, acento);
+      escreve(ctx, 'GOLS', LADO / 2 + 6, 865, { tamanho: 20, cor: '#fff', espaco: 3 });
 
       // Cabem quatro linhas antes do rodapé; uma goleada vira "+N" em vez de
       // vazar o cartão pela borda de baixo.
@@ -153,14 +166,14 @@
 
         if (doTime.length > CABEM) {
           escreve(ctx, `+${doTime.length - CABEM}`, x, 908 + CABEM * 33, {
-            tamanho: 22, peso: 700, alinha, cor: '#8d97a5'
+            tamanho: 22, peso: 700, alinha, cor: '#93a0c4'
           });
         }
       }
     }
 
     const data = new Date(estado.criadaEm).toLocaleDateString('pt-BR');
-    escreve(ctx, `${data}  ·  DuStats`, LADO / 2, LADO - 34, { tamanho: 19, cor: '#5c6675', espaco: 2 });
+    escreve(ctx, `${data}  ·  DuStats`, LADO / 2, LADO - 34, { tamanho: 19, cor: '#6a78a4', espaco: 2 });
 
     return canvas;
   }

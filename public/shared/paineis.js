@@ -119,7 +119,7 @@
 
     for (const lado of ['casa', 'fora']) {
       const caixa = container.querySelector(`.mapa[data-lado="${lado}"] .mapa-campo`);
-      const desenho = campo.criar({ traco: 'rgba(255,255,255,.28)', espessura: 0.32, grama: 'rgba(255,255,255,.035)' });
+      const desenho = campo.criar({ traco: 'rgba(255,255,255,.34)', espessura: 0.32, grama: 'rgba(0,0,0,.26)' });
       caixa.appendChild(desenho);
 
       const chutes = estado.chutes.filter((c) => c.equipe === lado);
