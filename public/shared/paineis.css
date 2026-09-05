@@ -1,0 +1,151 @@
+/* Estilos dos painéis em tela cheia (intervalo e resumo). Medidas pensadas
+   para 1920 × 1080 — é o tamanho da Fonte de Navegador no OBS. */
+
+.painel-cheio {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  padding: 54px 200px 46px;
+  /* Quase opaco: deixa o vídeo aparecer de leve no fundo em vez de cortar a
+     imagem, que é o que dá a sensação de gráfico de TV em vez de slide. */
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(28, 38, 54, .96), rgba(5, 7, 11, .97) 62%),
+    rgba(5, 7, 11, .93);
+  opacity: 0; transform: scale(1.015);
+  transition: opacity 520ms ease, transform 700ms cubic-bezier(.22,1,.36,1);
+}
+.painel-cheio.no-ar { opacity: 1; transform: none; }
+
+/* ------------------------------------------------------------- cabeçalho */
+
+.cabecalho { text-align: center; flex: 0 0 auto; }
+
+.competicao {
+  font-size: 20px; letter-spacing: .3em; text-transform: uppercase;
+  color: var(--texto-fraco);
+}
+
+.confronto {
+  display: grid; grid-template-columns: 1fr auto 1fr;
+  align-items: center; gap: 40px; margin-top: 18px;
+}
+.confronto .time { display: flex; align-items: center; gap: 22px; }
+.confronto .time.casa { justify-content: flex-end; }
+.confronto .nome-time {
+  font-size: 46px; font-weight: 700; text-transform: uppercase; letter-spacing: .02em;
+}
+.confronto .escudo {
+  width: 76px; height: 76px; object-fit: contain; flex: 0 0 auto;
+  display: grid; place-items: center;
+  border-radius: 8px; font-size: 24px; font-weight: 700;
+}
+
+.placar-grande {
+  display: flex; align-items: center; gap: 22px;
+  font-size: 86px; font-weight: 700; line-height: 1;
+}
+.placar-grande .x { font-size: 44px; opacity: .3; }
+
+.subtitulo {
+  margin-top: 16px; font-size: 19px; letter-spacing: .28em;
+  text-transform: uppercase; color: var(--texto-fraco);
+}
+
+.corpo {
+  flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center;
+  min-height: 0; margin-top: 26px;
+}
+
+/* ----------------------------------------------------------- comparativo */
+
+.comparativo { gap: 22px; }
+.linha-comp { grid-template-columns: 130px 1fr 130px; }
+.linha-comp .valor { font-size: 38px; }
+.linha-comp .valor.lider-casa { color: var(--cor-casa); }
+.linha-comp .valor.lider-fora { color: var(--cor-fora); }
+.linha-comp .rotulo-linha { font-size: 15px; margin-bottom: 9px; }
+.trilho.vazio { opacity: .3; }
+
+/* -------------------------------------------------------- mapa de chutes */
+
+.mapas { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; min-height: 0; }
+.mapa { display: flex; flex-direction: column; min-height: 0; }
+.mapa-topo { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.mapa-topo .escudo {
+  width: 44px; height: 44px; object-fit: contain;
+  display: grid; place-items: center; border-radius: 6px; font-size: 15px; font-weight: 700;
+}
+.mapa-nome { font-size: 26px; font-weight: 700; text-transform: uppercase; }
+.mapa-total { margin-left: auto; font-size: 19px; color: var(--texto-fraco); }
+.mapa-total strong { color: #fff; font-size: 23px; }
+.mapa-campo { flex: 1 1 auto; min-height: 0; display: flex; justify-content: center; }
+.mapa-campo svg { height: 100%; max-height: 440px; }
+.mapa-nota {
+  margin-top: 12px; font-size: 18px; color: var(--texto-fraco);
+  min-height: 24px; letter-spacing: .02em;
+}
+.mapa-nota strong { color: #fff; font-size: 21px; }
+.mapa-nota em { font-style: normal; opacity: .7; }
+
+.legenda, .legenda-pressao {
+  display: flex; justify-content: center; align-items: center; gap: 34px;
+  margin-top: 20px; font-size: 17px; color: var(--texto-fraco);
+  text-transform: uppercase; letter-spacing: .08em;
+}
+.item-legenda { display: inline-flex; align-items: center; gap: 9px; }
+
+.ponto {
+  width: 15px; height: 15px; border-radius: 50%;
+  border: 2px solid var(--forcada, rgba(255, 255, 255, .8));
+  background: var(--forcada, transparent);
+}
+.ponto.gol { background: #fff; border-color: #fff; width: 18px; height: 18px; }
+.ponto.no_gol { background: rgba(255, 255, 255, .85); border-color: transparent; }
+.ponto.trave { background: none; border-style: dashed; }
+.ponto.fora { background: none; }
+.ponto.bloqueada { background: none; opacity: .5; width: 12px; height: 12px; }
+
+.legenda-pressao .explica { text-transform: none; letter-spacing: normal; opacity: .7; }
+
+/* -------------------------------------------------------------- gráficos */
+
+.grafico-pressao, .grafico-tempo { width: 100%; height: auto; max-height: 560px; }
+.grafico-pressao text, .grafico-tempo text { font-family: var(--fonte); }
+
+.vazio {
+  text-align: center; font-size: 26px; color: var(--texto-fraco);
+  letter-spacing: .06em; text-transform: uppercase;
+}
+
+@keyframes surgirPonto {
+  from { opacity: 0; transform: scale(.4); transform-box: fill-box; transform-origin: center; }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes crescerBarra {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+
+/* ---------------------------------------------------------- transições */
+
+.slide { display: none; height: 100%; flex-direction: column; }
+.slide.ativo {
+  display: flex; justify-content: center;
+  animation: subir 560ms cubic-bezier(.22,1,.36,1) both;
+}
+
+.pontinhos {
+  display: flex; justify-content: center; gap: 10px; margin-top: 22px;
+  flex: 0 0 auto;
+}
+.pontinhos i {
+  width: 34px; height: 4px; border-radius: 2px;
+  background: rgba(255, 255, 255, .18);
+  transition: background 300ms ease;
+}
+.pontinhos i.ativo { background: #fff; }
+
+@media (prefers-reduced-motion: reduce) {
+  .slide.ativo { animation-duration: 1ms; }
+  .painel-cheio { transition-duration: 1ms; }
+}

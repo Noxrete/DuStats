@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>DuStats — Intervalo</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/shared/tema.css">
+<link rel="stylesheet" href="/shared/paineis.css">
+</head>
+<body class="overlay">
+
+<div class="painel-cheio" id="painel">
+  <div data-cabecalho></div>
+  <div class="corpo">
+    <div class="slide"></div>
+    <div class="slide"></div>
+    <div class="slide"></div>
+    <div class="slide"></div>
+  </div>
+  <div class="pontinhos" data-pontinhos><i></i><i></i><i></i><i></i></div>
+</div>
+
+<script src="/shared/bus.js"></script>
+<script src="/shared/relogio.js"></script>
+<script src="/shared/campo.js"></script>
+<script src="/shared/overlay.js"></script>
+<script src="/shared/paineis.js"></script>
+<script src="/shared/carrossel.js"></script>
+<script>
+'use strict';
+DuStats.carrossel.iniciar({
+  modo: 'intervalo',
+  painel: document.getElementById('painel'),
+  // Se o operador subir o painel fora do intervalo (a pedido do narrador, por
+  // exemplo), o título acompanha em vez de mentir "1º tempo".
+  titulo: (estado) => estado.relogio.periodo === 'INTERVALO'
+    ? 'Estatísticas do 1º tempo'
+    : 'Estatísticas da partida'
+});
+</script>
+</body>
+</html>

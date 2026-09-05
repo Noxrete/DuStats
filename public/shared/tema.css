@@ -1,0 +1,155 @@
+/*
+ * Identidade visual do DuStats.
+ *
+ * Duas regras guiam tudo aqui:
+ *  1. Nada de rede. Nenhuma fonte, ícone ou biblioteca externa — no campo o
+ *     PC do OBS pode estar sem internet, e um overlay que depende de CDN
+ *     entra no ar sem fonte e sem gráfico.
+ *  2. Legibilidade sobre vídeo. Fundo escuro e opaco atrás de texto, contorno
+ *     nos números e contraste alto: o overlay vai por cima de grama verde
+ *     ensolarada, não de um fundo controlado.
+ */
+
+:root {
+  --fonte: 'Bahnschrift', 'DIN Alternate', 'Roboto Condensed', 'Arial Narrow',
+    'Helvetica Neue', Arial, sans-serif;
+
+  --preto: #05070b;
+  --painel: rgba(9, 12, 18, 0.94);
+  --painel-claro: rgba(24, 30, 40, 0.94);
+  --linha: rgba(255, 255, 255, 0.12);
+  --texto: #ffffff;
+  --texto-fraco: #97a1b0;
+  --amarelo: #f2c94c;
+  --vermelho: #eb5757;
+  --verde: #35c47a;
+
+  /* Sobrescritas em tempo real pelo bus.js, a partir da config da partida. */
+  --cor-casa: #1f6feb;
+  --cor-fora: #d92d20;
+  --texto-casa: #ffffff;
+  --texto-fora: #ffffff;
+
+  --raio: 6px;
+  --sombra: 0 8px 28px rgba(0, 0, 0, 0.55);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--fonte);
+  color: var(--texto);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Os overlays entram no OBS como Fonte de Navegador: fundo transparente,
+   nada de barra de rolagem, e nenhum clique capturado. */
+body.overlay {
+  background: transparent;
+  overflow: hidden;
+  width: 1920px;
+  height: 1080px;
+  cursor: none;
+  user-select: none;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+.rotulo {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 13px;
+  color: var(--texto-fraco);
+}
+
+.chip-equipe {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.chip-equipe::before {
+  content: '';
+  width: 6px;
+  height: 20px;
+  border-radius: 2px;
+  background: var(--cor);
+}
+
+/* ------------------------------------------------------ barra comparativa */
+
+.comparativo { display: grid; gap: 18px; }
+
+.linha-comp {
+  display: grid;
+  grid-template-columns: 120px 1fr 120px;
+  align-items: center;
+  gap: 20px;
+}
+
+.linha-comp .valor {
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.linha-comp .valor.esq { text-align: right; }
+.linha-comp .rotulo-linha {
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 16px;
+  color: var(--texto-fraco);
+  margin-bottom: 8px;
+}
+
+.trilho {
+  display: flex;
+  height: 12px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.trilho span {
+  display: block;
+  height: 100%;
+  /* A barra cresce do zero quando o painel entra no ar: a animação é o que
+     transforma uma tabela num gráfico de transmissão. */
+  transition: width 900ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.trilho .casa { background: var(--cor-casa); }
+.trilho .fora { background: var(--cor-fora); }
+
+/* ------------------------------------------------------------- animações */
+
+@keyframes subir {
+  from { opacity: 0; transform: translateY(26px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes entrarEsquerda {
+  from { opacity: 0; transform: translateX(-60px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes pulsar {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
+
+.anima-subir { animation: subir 620ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Respeita quem configurou o sistema para reduzir movimento. */
+@media (prefers-reduced-motion: reduce) {
+  .anima-subir { animation-duration: 1ms; }
+  .trilho span { transition-duration: 1ms; }
+}

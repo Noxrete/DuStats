@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>DuStats — Lances</title>
+<link rel="stylesheet" href="/shared/tema.css">
+<style>
+  /*
+   * Selo de lance (gol e cartão). Entra sozinho quando o apontador registra,
+   * fica 7 s e sai. Nada aqui é acionado no OBS.
+   */
+  #selo {
+    position: absolute; left: 60px; bottom: 96px;
+    display: flex; align-items: stretch;
+    border-radius: 10px; overflow: hidden;
+    box-shadow: var(--sombra);
+    opacity: 0; transform: translateX(-70px);
+    transition: opacity 380ms ease, transform 560ms cubic-bezier(.22,1,.36,1);
+  }
+  #selo.no-ar { opacity: 1; transform: none; }
+
+  .marca-lateral { width: 14px; background: var(--cor-lance, var(--verde)); }
+
+  .icone {
+    display: grid; place-items: center;
+    width: 132px; background: var(--painel-claro);
+    font-size: 62px; line-height: 1;
+  }
+  .icone .cartao {
+    width: 46px; height: 64px; border-radius: 5px;
+    background: var(--cor-lance);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .5);
+    transform: rotate(-9deg);
+  }
+
+  .texto { background: var(--painel); padding: 22px 44px 22px 30px; min-width: 480px; }
+  .texto .titulo {
+    font-size: 58px; font-weight: 700; line-height: 1;
+    letter-spacing: .02em; text-transform: uppercase;
+  }
+  .texto .detalhe {
+    display: flex; align-items: center; gap: 14px; margin-top: 10px;
+    font-size: 26px; letter-spacing: .04em; text-transform: uppercase;
+  }
+  .texto .detalhe .time { font-weight: 700; }
+  .texto .detalhe .minuto {
+    padding: 3px 12px; border-radius: 4px;
+    background: rgba(255, 255, 255, .12); font-size: 22px;
+  }
+
+  .placarinho {
+    display: grid; place-items: center; padding: 0 30px;
+    background: var(--preto); font-size: 46px; font-weight: 700;
+  }
+  .placarinho[hidden] { display: none !important; }
+</style>
+</head>
+<body class="overlay">
+
+<div id="selo">
+  <div class="marca-lateral"></div>
+  <div class="icone" id="icone"></div>
+  <div class="texto">
+    <div class="titulo" id="titulo">Gol</div>
+    <div class="detalhe">
+      <span class="time" id="time">Time</span>
+      <span class="minuto num" id="minuto">0'</span>
+    </div>
+  </div>
+  <div class="placarinho num" id="placarinho" hidden></div>
+</div>
+
+<script src="/shared/bus.js"></script>
+<script src="/shared/relogio.js"></script>
+<script src="/shared/overlay.js"></script>
+<script>
+'use strict';
+
+const selo = document.getElementById('selo');
+const { overlay } = DuStats;
+const DURACAO = Number(overlay.parametros.get('segundos') || 7) * 1000;
+let temporizador = null;
+
+function mostrar({ cor, icone, titulo, time, minuto, placar }) {
+  selo.style.setProperty('--cor-lance', cor);
+  document.getElementById('icone').innerHTML = icone;
+  document.getElementById('titulo').textContent = titulo;
+  document.getElementById('time').textContent = time;
+  document.getElementById('minuto').textContent = `${minuto}'`;
+
+  const caixaPlacar = document.getElementById('placarinho');
+  caixaPlacar.hidden = !placar;
+  if (placar) caixaPlacar.textContent = placar;
+
+  selo.classList.add('no-ar');
+  clearTimeout(temporizador);
+  temporizador = setTimeout(() => selo.classList.remove('no-ar'), DURACAO);
+}
+
+DuStats.overlay.aoNovoLance(['gol', 'cartao'], (evento, estado) => {
+  const time = overlay.nome(estado.config, evento.team);
+  const cor = `var(--cor-${evento.team})`;
+
+  if (evento.type === 'gol') {
+    return mostrar({
+      cor,
+      icone: '⚽',
+      titulo: evento.meta?.contra ? 'Gol contra' : 'Gol',
+      time,
+      minuto: evento.minuto,
+      placar: `${estado.placar.casa} × ${estado.placar.fora}`
+    });
+  }
+
+  const vermelho = evento.meta?.cor === 'vermelho';
+  mostrar({
+    cor: vermelho ? 'var(--vermelho)' : 'var(--amarelo)',
+    icone: '<div class="cartao"></div>',
+    titulo: vermelho ? 'Cartão vermelho' : 'Cartão amarelo',
+    time,
+    minuto: evento.minuto
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>DuStats — Resumo</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/shared/tema.css">
+<link rel="stylesheet" href="/shared/paineis.css">
+<style>
+  /* Barra de exportação: só aparece com ?exportar=1, ou seja, quando a página
+     foi aberta num navegador comum. No OBS a URL vai sem o parâmetro e o
+     overlay fica limpo. */
+  #exportar {
+    position: fixed; inset: auto 0 0; z-index: 50;
+    display: none; align-items: center; justify-content: center; gap: 14px;
+    padding: 18px; background: rgba(5, 7, 11, .96);
+    border-top: 1px solid var(--linha);
+  }
+  body.com-exportacao { cursor: auto; }
+  body.com-exportacao #exportar { display: flex; }
+  #exportar button, #exportar a {
+    font-family: inherit; font-size: 15px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .05em; text-decoration: none;
+    color: #fff; background: #1b2432; border: 1px solid var(--linha);
+    border-radius: 6px; padding: 13px 22px; cursor: pointer;
+  }
+  #exportar button:hover, #exportar a:hover { filter: brightness(1.4); }
+  #previa { max-height: 150px; border-radius: 6px; border: 1px solid var(--linha); }
+</style>
+</head>
+<body class="overlay">
+
+<div class="painel-cheio" id="painel">
+  <div data-cabecalho></div>
+  <div class="corpo">
+    <div class="slide"></div>
+    <div class="slide"></div>
+    <div class="slide"></div>
+    <div class="slide"></div>
+  </div>
+  <div class="pontinhos" data-pontinhos><i></i><i></i><i></i><i></i></div>
+</div>
+
+<div id="exportar">
+  <img id="previa" alt="Prévia do card">
+  <button id="btPng">Baixar PNG quadrado</button>
+  <a href="/api/export/resumo.csv">Resumo CSV</a>
+  <a href="/api/export/eventos.csv">Lances CSV</a>
+  <a href="/api/export/partida.json">Backup JSON</a>
+</div>
+
+<script src="/shared/bus.js"></script>
+<script src="/shared/relogio.js"></script>
+<script src="/shared/campo.js"></script>
+<script src="/shared/overlay.js"></script>
+<script src="/shared/paineis.js"></script>
+<script src="/shared/carrossel.js"></script>
+<script src="/shared/cartao.js"></script>
+<script>
+'use strict';
+
+DuStats.carrossel.iniciar({
+  modo: 'resumo',
+  painel: document.getElementById('painel'),
+  titulo: () => 'Fim de jogo'
+});
+
+if (DuStats.overlay.parametros.get('exportar') === '1') {
+  document.body.classList.add('com-exportacao');
+  // Fora do OBS o painel deve aparecer mesmo que a transmissão esteja noutro
+  // modo — senão o operador abre a página para exportar e vê a tela preta.
+  document.getElementById('painel').classList.add('no-ar');
+
+  let cartaoPronto = false;
+  DuStats.aoEstado(async (estado) => {
+    if (cartaoPronto) return;
+    cartaoPronto = true;
+    const canvas = await DuStats.cartao.desenhar(estado, { titulo: 'Fim de jogo' });
+    document.getElementById('previa').src = canvas.toDataURL('image/png');
+    if (!document.querySelector('.slide.ativo')) {
+      DuStats.paineis.comparativo(document.querySelector('.slide'), estado);
+      document.querySelector('.slide').classList.add('ativo');
+      document.querySelector('[data-cabecalho]').innerHTML =
+        DuStats.paineis.cabecalho(estado, 'Fim de jogo · Comparativo');
+    }
+  });
+
+  document.getElementById('btPng').addEventListener('click', () => {
+    DuStats.cartao.baixar(DuStats.estado(), { titulo: 'Fim de jogo' });
+  });
+}
+</script>
+</body>
+</html>

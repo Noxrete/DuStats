@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#05070b">
+<title>DuStats — Painel do apontador</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%E2%9A%BD%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="/shared/tema.css">
+<style>
+  body {
+    background: #05070b;
+    padding-bottom: env(safe-area-inset-bottom);
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  .aviso {
+    position: sticky; top: 0; z-index: 40;
+    padding: 10px 14px; font-weight: 700; font-size: 14px;
+    text-align: center; letter-spacing: .04em; text-transform: uppercase;
+    background: var(--vermelho); color: #fff;
+  }
+  .aviso[hidden] { display: none !important; }
+
+  header {
+    position: sticky; top: 0; z-index: 30;
+    background: #0b0f16; border-bottom: 1px solid var(--linha);
+    padding: 10px 12px 12px;
+  }
+
+  .topo { display: flex; align-items: center; gap: 10px; }
+  .relogio { font-size: 40px; font-weight: 700; line-height: 1; letter-spacing: -.02em; }
+  .periodo {
+    font-size: 12px; text-transform: uppercase; letter-spacing: .12em;
+    color: var(--texto-fraco);
+  }
+  .topo .cresce { flex: 1; }
+
+  .placar { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+  .placar .lado {
+    flex: 1; display: flex; align-items: center; gap: 8px;
+    background: #131a25; border-radius: var(--raio); padding: 8px 10px;
+    border-left: 5px solid var(--cor);
+    min-width: 0;
+  }
+  .placar .lado .nome {
+    font-weight: 700; font-size: 15px; text-transform: uppercase;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .placar .lado .gols { margin-left: auto; font-size: 30px; font-weight: 700; line-height: 1; }
+
+  button {
+    font-family: inherit; color: inherit; border: 0;
+    background: #1b2432; border-radius: var(--raio);
+    padding: 14px 10px; font-size: 15px; font-weight: 700;
+    letter-spacing: .03em; text-transform: uppercase;
+    cursor: pointer; touch-action: manipulation;
+    transition: transform 90ms ease, filter 120ms ease;
+  }
+  button:active { transform: scale(.965); filter: brightness(1.35); }
+  button[disabled] { opacity: .4; }
+
+  .b-fantasma { background: #131a25; border: 1px solid var(--linha); }
+  .b-relogio { min-width: 76px; font-size: 20px; padding: 12px 14px; }
+  .b-relogio.rodando { background: var(--vermelho); }
+  .b-relogio.parado { background: var(--verde); color: #04180f; }
+
+  /* --------------------------------------------------------- posse de bola */
+
+  .posse {
+    display: grid; grid-template-columns: 1fr .8fr 1fr; gap: 6px;
+    margin-top: 10px;
+  }
+  .posse button {
+    padding: 16px 6px; font-size: 15px;
+    background: #131a25; border: 2px solid transparent;
+  }
+  .posse button[aria-pressed="true"] { border-color: #fff; }
+  .posse .casa[aria-pressed="true"] { background: var(--cor-casa); color: var(--texto-casa); }
+  .posse .fora[aria-pressed="true"] { background: var(--cor-fora); color: var(--texto-fora); }
+  .posse .parada[aria-pressed="true"] { background: #46505f; }
+  .posse .barrinha { grid-column: 1 / -1; }
+
+  /* ------------------------------------------------------------ conteúdo */
+
+  /* Espaço para o botão fixo de desfazer + a barra de abas não cobrirem a lista. */
+  main { padding: 12px 12px 152px; }
+  .aba[hidden] { display: none !important; }
+
+  .grade-times { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .coluna h2 {
+    margin: 0 0 8px; font-size: 13px; letter-spacing: .1em; text-transform: uppercase;
+    padding: 6px 8px; border-radius: 4px; text-align: center;
+    background: var(--cor); color: var(--texto-cor);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .coluna .lances { display: grid; gap: 6px; }
+  .coluna .lances button { padding: 15px 6px; font-size: 14px; }
+  .lances .destaque { background: #24405f; font-size: 17px; padding: 19px 6px; }
+  .lances .gol { background: var(--verde); color: #04180f; font-size: 19px; padding: 21px 6px; }
+
+  .desfazer {
+    position: fixed; left: 12px; right: 12px; bottom: 74px; z-index: 20;
+    background: #5b2020; border: 1px solid #8d3a3a;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 15px 12px;
+  }
+  .desfazer .alvo { font-weight: 400; text-transform: none; letter-spacing: 0; opacity: .85; }
+  .desfazer[hidden] { display: none !important; }
+
+  .ultimos { margin-top: 16px; }
+  .ultimos h3 { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--texto-fraco); margin: 0 0 8px; }
+  .ultimos ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .ultimos li {
+    display: flex; align-items: center; gap: 10px;
+    background: #101722; border-radius: 4px; padding: 9px 10px; font-size: 14px;
+    border-left: 4px solid var(--cor, #333);
+  }
+  .ultimos .min { font-weight: 700; min-width: 40px; }
+  .ultimos .apagar { margin-left: auto; background: none; padding: 4px 8px; font-size: 18px; opacity: .5; }
+
+  /* ------------------------------------------------------------- rodapé */
+
+  nav {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    background: #0b0f16; border-top: 1px solid var(--linha);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  nav button { background: none; border-radius: 0; padding: 16px 4px; font-size: 13px; color: var(--texto-fraco); }
+  nav button[aria-selected="true"] { color: #fff; box-shadow: inset 0 3px 0 var(--cor-casa); }
+
+  /* --------------------------------------------------------------- modal */
+
+  dialog {
+    border: 0; padding: 0; background: #0d131c; color: #fff;
+    border-radius: 12px; width: min(94vw, 460px);
+    box-shadow: var(--sombra);
+  }
+  dialog::backdrop { background: rgba(0, 0, 0, .72); }
+  .modal-corpo { padding: 16px; }
+  .modal-corpo h2 { margin: 0 0 4px; font-size: 19px; text-transform: uppercase; letter-spacing: .04em; }
+  .modal-corpo p { margin: 0 0 12px; color: var(--texto-fraco); font-size: 14px; }
+  .modal-acoes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .modal-acoes .largo { grid-column: 1 / -1; }
+
+  .caixa-campo {
+    position: relative; background: #123a22; border-radius: 8px;
+    margin-bottom: 12px; overflow: hidden; aspect-ratio: 70.4 / 54.9;
+  }
+  .caixa-campo svg { display: block; width: 100%; height: 100%; }
+  .caixa-campo .rumo {
+    position: absolute; inset: 6px 0 auto; text-align: center;
+    font-size: 12px; letter-spacing: .16em; text-transform: uppercase;
+    color: rgba(255, 255, 255, .6); pointer-events: none;
+  }
+  .caixa-campo .dica {
+    position: absolute; inset: auto 0 8px; text-align: center;
+    font-size: 13px; letter-spacing: .06em; text-transform: uppercase;
+    color: rgba(255, 255, 255, .8); pointer-events: none;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, .9);
+  }
+  .marca { fill: #fff; stroke: #0d131c; stroke-width: .5; }
+
+  /* ------------------------------------------------------------- ajustes */
+
+  .cartao { background: #101722; border-radius: 8px; padding: 14px; margin-bottom: 12px; }
+  .cartao h3 { margin: 0 0 12px; font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--texto-fraco); }
+  label { display: block; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--texto-fraco); margin: 10px 0 4px; }
+  input[type="text"], input[type="color"], select {
+    width: 100%; padding: 12px; font-family: inherit; font-size: 16px;
+    background: #1b2432; border: 1px solid var(--linha); border-radius: 6px; color: #fff;
+  }
+  input[type="color"] { padding: 4px; height: 46px; }
+  .dupla { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .links { display: grid; gap: 6px; font-size: 13px; }
+  .links code {
+    display: block; background: #05070b; padding: 10px; border-radius: 4px;
+    word-break: break-all; color: #8fd3ff; font-family: ui-monospace, monospace;
+  }
+  .aviso-inline { font-size: 13px; color: var(--texto-fraco); line-height: 1.5; }
+
+  .ar { display: grid; gap: 8px; }
+  .ar .modos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .ar .modos button[aria-pressed="true"] { background: var(--vermelho); }
+  #btAuto[aria-pressed="true"] { background: #1d4b33; }
+  .ar .slides { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 8px; align-items: center; }
+  .ar .slide-atual { text-align: center; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+</style>
+</head>
+<body>
+
+<div class="aviso" id="aviso" hidden></div>
+
+<header>
+  <div class="topo">
+    <div>
+      <div class="relogio num" id="relogio">00:00</div>
+      <div class="periodo" id="periodo">Pré-jogo</div>
+    </div>
+    <div class="cresce"></div>
+    <button class="b-relogio parado" id="btRelogio">▶</button>
+    <button class="b-fantasma" id="btPeriodo">Próximo<br>período</button>
+  </div>
+
+  <div class="placar">
+    <div class="lado" style="--cor: var(--cor-casa)">
+      <span class="nome" id="nomeCasa">Casa</span>
+      <span class="gols num" id="golsCasa">0</span>
+    </div>
+    <div class="lado" style="--cor: var(--cor-fora)">
+      <span class="nome" id="nomeFora">Fora</span>
+      <span class="gols num" id="golsFora">0</span>
+    </div>
+  </div>
+
+  <div class="posse">
+    <button class="casa" data-posse="casa" aria-pressed="false">Posse casa</button>
+    <button class="parada" data-posse="" aria-pressed="true">Parada</button>
+    <button class="fora" data-posse="fora" aria-pressed="false">Posse fora</button>
+    <div class="barrinha trilho">
+      <span class="casa" id="barraCasa" style="width:50%"></span>
+      <span class="fora" id="barraFora" style="width:50%"></span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- ----------------------------------------------------------- LANCES -->
+  <section class="aba" id="aba-lances">
+    <div class="grade-times">
+      <div class="coluna" style="--cor: var(--cor-casa); --texto-cor: var(--texto-casa)">
+        <h2 id="tituloCasa">Casa</h2>
+        <div class="lances" data-equipe="casa"></div>
+      </div>
+      <div class="coluna" style="--cor: var(--cor-fora); --texto-cor: var(--texto-fora)">
+        <h2 id="tituloFora">Fora</h2>
+        <div class="lances" data-equipe="fora"></div>
+      </div>
+    </div>
+
+    <div class="ultimos">
+      <h3>Últimos lances — toque para apagar</h3>
+      <ol id="listaUltimos"></ol>
+    </div>
+  </section>
+
+  <!-- --------------------------------------------------------------- AR -->
+  <section class="aba" id="aba-ar" hidden>
+    <div class="cartao ar">
+      <h3>O que está no ar</h3>
+      <div class="modos">
+        <button data-modo="jogo">Jogo</button>
+        <button data-modo="intervalo">Intervalo</button>
+        <button data-modo="resumo">Resumo</button>
+      </div>
+      <p class="aviso-inline">
+        <strong>Jogo</strong> mostra só o placar. <strong>Intervalo</strong> roda o carrossel
+        de estatísticas em tela cheia. <strong>Resumo</strong> é o painel de fim de jogo.
+      </p>
+      <div class="slides">
+        <button class="b-fantasma" id="btAnterior">◀</button>
+        <div class="slide-atual" id="slideAtual">—</div>
+        <button class="b-fantasma" id="btProximo">▶</button>
+      </div>
+      <button id="btAuto" aria-pressed="true">Avanço automático: ligado</button>
+      <p class="aviso-inline">
+        Com o avanço ligado, o carrossel troca de slide a cada 12 s enquanto o painel
+        estiver no ar. As setas trocam na hora e reiniciam a contagem.
+      </p>
+    </div>
+
+    <div class="cartao">
+      <h3>Acréscimos do período</h3>
+      <div class="modal-acoes">
+        <button data-acrescimo="1">+1 min</button>
+        <button data-acrescimo="2">+2 min</button>
+        <button data-acrescimo="3">+3 min</button>
+        <button data-acrescimo="5">+5 min</button>
+        <button class="b-fantasma largo" data-acrescimo="0">Limpar acréscimos</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------------------------------------------------------- AJUSTES -->
+  <section class="aba" id="aba-ajustes" hidden>
+    <div class="cartao">
+      <h3>Partida</h3>
+      <label for="cfgCompeticao">Competição</label>
+      <input type="text" id="cfgCompeticao" placeholder="Campeonato Amador">
+      <label for="cfgLocal">Local</label>
+      <input type="text" id="cfgLocal" placeholder="Campo do Bairro">
+    </div>
+
+    <div class="cartao" id="cartaoTimes"></div>
+
+    <div class="cartao">
+      <h3>Overlays para o OBS</h3>
+      <p class="aviso-inline">
+        Adicione cada um como <strong>Fonte de Navegador</strong>, 1920 × 1080,
+        e marque “Desligar a fonte quando não estiver visível”.
+      </p>
+      <div class="links" id="linksOverlay"></div>
+    </div>
+
+    <div class="cartao">
+      <h3>Exportar</h3>
+      <div class="modal-acoes">
+        <button class="b-fantasma" onclick="location.href='/api/export/resumo.csv'">Resumo CSV</button>
+        <button class="b-fantasma" onclick="location.href='/api/export/eventos.csv'">Lances CSV</button>
+        <button class="b-fantasma largo" onclick="location.href='/api/export/partida.json'">Backup JSON da partida</button>
+      </div>
+    </div>
+
+    <div class="cartao">
+      <h3>Nova partida</h3>
+      <p class="aviso-inline">
+        Arquiva o jogo atual e zera tudo, mantendo os times configurados.
+        O jogo anterior continua salvo em <code>data/matches/</code>.
+      </p>
+      <button class="b-fantasma" id="btNova" style="width:100%; margin-top:10px">Começar partida nova</button>
+    </div>
+  </section>
+</main>
+
+<button class="desfazer" id="btDesfazer" hidden>
+  Desfazer <span class="alvo" id="alvoDesfazer"></span>
+</button>
+
+<nav>
+  <button data-aba="lances" aria-selected="true">Lances</button>
+  <button data-aba="ar" aria-selected="false">No ar</button>
+  <button data-aba="ajustes" aria-selected="false">Ajustes</button>
+</nav>
+
+<dialog id="modal">
+  <div class="modal-corpo">
+    <h2 id="modalTitulo"></h2>
+    <p id="modalTexto"></p>
+    <div class="caixa-campo" id="modalCampo" hidden>
+      <div class="rumo">▲ Gol</div>
+      <div class="dica">Toque onde saiu o chute</div>
+    </div>
+    <div class="modal-acoes" id="modalAcoes"></div>
+  </div>
+</dialog>
+
+<script src="/shared/bus.js"></script>
+<script src="/shared/relogio.js"></script>
+<script src="/shared/campo.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

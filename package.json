@@ -1,0 +1,18 @@
+{
+  "name": "dustats",
+  "version": "1.0.0",
+  "description": "Estatisticas ao vivo de futebol amador para transmissao no OBS",
+  "private": true,
+  "type": "commonjs",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "simular": "node server/simulate.js",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "express": "^4.21.2",
+    "ws": "^8.18.0"
+  }
+}

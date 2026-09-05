@@ -1,0 +1,31 @@
+{
+  "id": "futebol",
+  "nome": "Futebol de campo",
+  "periodos": [
+    { "id": "PRE",       "nome": "Pré-jogo",   "curto": "PRÉ", "duracaoMin": 0,  "jogo": false },
+    { "id": "1T",        "nome": "1º Tempo",   "curto": "1ºT", "duracaoMin": 45, "jogo": true  },
+    { "id": "INTERVALO", "nome": "Intervalo",  "curto": "INT", "duracaoMin": 15, "jogo": false },
+    { "id": "2T",        "nome": "2º Tempo",   "curto": "2ºT", "duracaoMin": 45, "jogo": true  },
+    { "id": "FIM",       "nome": "Fim de jogo","curto": "FIM", "duracaoMin": 0,  "jogo": false }
+  ],
+  "eventos": {
+    "gol":          { "rotulo": "Gol",           "equipe": true,  "local": true  },
+    "finalizacao":  { "rotulo": "Finalização",   "equipe": true,  "local": true  },
+    "escanteio":    { "rotulo": "Escanteio",     "equipe": true,  "local": false },
+    "falta":        { "rotulo": "Falta",         "equipe": true,  "local": false },
+    "cartao":       { "rotulo": "Cartão",        "equipe": true,  "local": false },
+    "impedimento":  { "rotulo": "Impedimento",   "equipe": true,  "local": false },
+    "defesa":       { "rotulo": "Defesa",        "equipe": true,  "local": false },
+    "substituicao": { "rotulo": "Substituição",  "equipe": true,  "local": false },
+    "posse":        { "rotulo": "Posse de bola", "equipe": true,  "local": false },
+    "relogio":      { "rotulo": "Relógio",       "equipe": false, "local": false },
+    "periodo":      { "rotulo": "Período",       "equipe": false, "local": false },
+    "acrescimo":    { "rotulo": "Acréscimos",    "equipe": false, "local": false }
+  },
+  "desfechosFinalizacao": {
+    "no_gol":    { "rotulo": "No gol",    "curto": "NO GOL",   "noGol": true  },
+    "trave":     { "rotulo": "Na trave",  "curto": "TRAVE",    "noGol": false },
+    "fora":      { "rotulo": "Para fora", "curto": "PRA FORA", "noGol": false },
+    "bloqueada": { "rotulo": "Bloqueada", "curto": "BLOQUEADA","noGol": false }
+  }
+}
