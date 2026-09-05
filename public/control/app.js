@@ -257,6 +257,88 @@ for (const botao of $$('[data-acrescimo]')) {
   });
 }
 
+// ------------------------------------------------------- faixa do rodapé
+
+/**
+ * Os rótulos aqui são exatamente os de `linhasComparativas()` no servidor.
+ * A faixa procura a linha pelo rótulo em vez de recalcular a estatística, então
+ * o número do rodapé e o número do painel do intervalo não têm como divergir.
+ */
+const FAIXAS = [
+  { rotulo: 'Posse de bola', botao: 'Posse de bola' },
+  { rotulo: 'Finalizações', botao: 'Finalizações' },
+  { rotulo: 'No gol', botao: 'Chutes no gol' },
+  { rotulo: 'Escanteios', botao: 'Escanteios' },
+  { rotulo: 'Faltas', botao: 'Faltas' },
+  { rotulo: 'Cartões amarelos', botao: 'Cartões' }
+];
+
+const SEQUENCIA = ['Posse de bola', 'Finalizações', 'Escanteios'];
+const PASSO_SEQUENCIA = 8000;
+let temporizadoresDaSequencia = [];
+
+function montarBotoesDeFaixa() {
+  const container = $('#botoesFaixa');
+  container.innerHTML = '';
+  for (const faixa of FAIXAS) {
+    const botao = document.createElement('button');
+    botao.textContent = faixa.botao;
+    botao.dataset.rotulo = faixa.rotulo;
+    botao.addEventListener('click', () => {
+      pararSequencia();
+      chamarFaixa(faixa.rotulo);
+    });
+    container.appendChild(botao);
+  }
+}
+
+function chamarFaixa(rotulo) {
+  confirmarComVibracao();
+  DuStats.transmissao({ faixa: { rotulo } });
+}
+
+function pararSequencia() {
+  for (const id of temporizadoresDaSequencia) clearTimeout(id);
+  temporizadoresDaSequencia = [];
+}
+
+$('#btEsconderFaixa').addEventListener('click', () => {
+  pararSequencia();
+  confirmarComVibracao();
+  DuStats.transmissao({ faixa: null });
+});
+
+$('#btSequencia').addEventListener('click', () => {
+  pararSequencia();
+  // Só entram na sequência as estatísticas que já existem no jogo: chamar
+  // "escanteios" quando ninguém bateu nenhum põe uma faixa vazia no ar.
+  const disponiveis = SEQUENCIA.filter((rotulo) => temFaixa(rotulo));
+  disponiveis.forEach((rotulo, i) => {
+    if (i === 0) return chamarFaixa(rotulo);
+    temporizadoresDaSequencia.push(setTimeout(() => chamarFaixa(rotulo), i * PASSO_SEQUENCIA));
+  });
+});
+
+function temFaixa(rotulo) {
+  return (ultimoEstado?.comparativo || []).some((l) => l.rotulo === rotulo);
+}
+
+// --------------------------------------------- sincronizar com o Placar PRO
+
+$('#btSincronizar').addEventListener('click', () => {
+  const min = Number($('#sincMin').value);
+  const seg = Number($('#sincSeg').value || 0);
+  if (!Number.isFinite(min) || min < 0) return alert('Digite o minuto que está no Placar PRO.');
+
+  DuStats.registrar({
+    type: 'relogio',
+    meta: { acao: 'ajustar', paraMs: min * 60000 + seg * 1000 }
+  });
+  confirmarComVibracao();
+  $('#sincMin').value = '';
+  $('#sincSeg').value = '';
+});
+
 // -------------------------------------------------------------- ajustes
 
 function montarAjustes(estado) {
@@ -315,8 +397,12 @@ function montarAjustes(estado) {
     });
   }
 
-  $('#linksOverlay').innerHTML = ['placar', 'evento', 'intervalo', 'resumo']
-    .map((p) => `<div><strong>${p}</strong><code>${location.origin}/overlay/${p}.html</code></div>`)
+  const OVERLAYS = [
+    ['faixa', 'Rodapé, sob demanda — não colide com o Placar PRO no topo'],
+    ['intervalo', 'Tela cheia. Ponha ACIMA do Placar PRO na ordem das fontes']
+  ];
+  $('#linksOverlay').innerHTML = OVERLAYS
+    .map(([p, nota]) => `<div><strong>${p}</strong><code>${location.origin}/overlay/${p}.html</code><small>${nota}</small></div>`)
     .join('');
 
   $('#btNova').addEventListener('click', () => {
@@ -402,12 +488,22 @@ function renderizar(estado) {
   }
   $('#slideAtual').textContent = NOME_SLIDE[estado.transmissao.slide] || '—';
 
+  const noAr = estado.transmissao.faixa;
+  const faixaViva = noAr?.em && DuStats.agoraServidor() - noAr.em < 10000;
+  for (const botao of $$('#botoesFaixa button')) {
+    botao.disabled = !temFaixa(botao.dataset.rotulo);
+    botao.classList.toggle('no-ar', Boolean(faixaViva) && noAr.rotulo === botao.dataset.rotulo);
+  }
+
   montarAjustes(estado);
 }
 
 DuStats.aoEstado(renderizar);
 
-DuStats.relogio.aoTique((texto) => { $('#relogio').textContent = texto; });
+DuStats.relogio.aoTique((texto) => {
+  $('#relogio').textContent = texto;
+  $('#sincAtual').textContent = `DuStats está marcando ${texto} neste período.`;
+});
 
 DuStats.aoConectar((conectado, pendentes) => {
   const aviso = $('#aviso');
@@ -464,3 +560,4 @@ document.addEventListener('keydown', (evento) => {
 });
 
 montarBotoesDeLance();
+montarBotoesDeFaixa();

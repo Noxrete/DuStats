@@ -179,7 +179,7 @@ async function modoVivo() {
 
   await novaPartida();
   await api('/api/transmissao', { modo: 'jogo', slide: 0 });
-  console.log(`\n  Jogo ao vivo por ~${minutos} min. Abra ${URL_BASE}/overlay/placar.html e ${URL_BASE}/control/`);
+  console.log(`\n  Jogo ao vivo por ~${minutos} min. Abra ${URL_BASE}/overlay/faixa.html e ${URL_BASE}/control/`);
   console.log('  Ctrl+C para parar.\n');
 
   const inicio = Date.now();

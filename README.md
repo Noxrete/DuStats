@@ -2,27 +2,48 @@
 
 Estatísticas ao vivo de futebol amador para transmissão no OBS.
 
-Você aponta os lances num celular; o placar, o selo de gol e o painel de
-estatísticas do intervalo entram no ar sozinhos, sem ninguém tocar no OBS
-durante o jogo.
+Você aponta os lances num celular e as estatísticas entram no ar sozinhas —
+uma faixa no rodapé durante o jogo, um painel em tela cheia no intervalo — sem
+ninguém tocar no OBS.
 
 ```
-celular do apontador  ──►  DuStats (PC do OBS)  ──►  4 overlays no OBS
-   botões de 1 toque        Node.js + WebSocket        placar · gol · intervalo · resumo
+celular do apontador  ──►  DuStats (PC do OBS)  ──►  2 overlays no OBS
+   botões de 1 toque        Node.js + WebSocket       faixa (rodapé) · intervalo (tela cheia)
+```
+
+## O DuStats só faz estatística
+
+Ele foi feito para conviver com o **[Placar PRO](https://painelplacarpro.com.br/)**,
+não para substituí-lo. A divisão é rígida de propósito: dois sistemas
+desenhando a mesma coisa é o caminho mais curto para dois placares no ar e dois
+cronômetros divergentes.
+
+| O Placar PRO faz | O DuStats faz |
+|---|---|
+| Placar, cronômetro, acréscimos | Posse de bola |
+| Escalações | Finalizações, chutes no gol, precisão |
+| Replays e melhores momentos | Escanteios, faltas, impedimentos, defesas |
+| Overlay de gol e cartão | Mapa de chutes e índice de pressão |
+
+Por isso o DuStats **não tem overlay de placar nem selo de gol**. Eles
+existiram e foram removidos justamente para não conflitar. Se um dia você
+parar de usar o Placar PRO, dá para trazê-los de volta:
+
+```bash
+git checkout af5def7 -- public/overlay/placar.html public/overlay/evento.html
 ```
 
 ## O que entra no ar
 
 | Overlay | Quando aparece | O que mostra |
 |---|---|---|
-| `placar.html` | modo **Jogo** | Placar, cronômetro, acréscimos e barra de posse |
-| `evento.html` | sozinho, por 7 s | Selo de gol e de cartão, com o placar atualizado |
-| `intervalo.html` | modo **Intervalo** | Carrossel: comparativo → mapa de chutes → pressão → gols e cartões |
+| `faixa.html` | quando você chama, por 10 s | Uma estatística no rodapé: posse, finalizações, chutes no gol, escanteios, faltas ou cartões |
+| `intervalo.html` | modo **Intervalo** | Carrossel em tela cheia: comparativo → mapa de chutes → pressão → gols e cartões |
 | `resumo.html` | modo **Resumo** | O mesmo carrossel com o jogo inteiro, mais a exportação |
 
-Os quatro ficam na **mesma cena do OBS o tempo todo**. Cada um decide sozinho
-se está no ar, olhando o modo que o celular mandou — por isso não existe troca
-de fonte no OBS no meio da transmissão.
+Os dois primeiros ficam na **mesma cena do OBS o tempo todo** e decidem sozinhos
+quando aparecer, obedecendo o celular. O `resumo.html` é para abrir no navegador
+depois do jogo.
 
 ## Instalar
 
@@ -45,32 +66,45 @@ O terminal imprime os endereços, já com o IP da sua rede:
      http://192.168.0.12:4400/control/
 
   OVERLAYS — adicione como Fonte de Navegador no OBS, 1920x1080:
-     placar    http://192.168.0.12:4400/overlay/placar.html
-     ...
+     faixa     http://192.168.0.12:4400/overlay/faixa.html   (rodapé, sob demanda)
+     intervalo http://192.168.0.12:4400/overlay/intervalo.html   (tela cheia)
 ```
 
 Deixe essa janela aberta durante todo o jogo.
 
 ## Montar no OBS (uma vez só)
 
-Para cada um dos quatro overlays:
+Para cada um dos dois overlays:
 
-1. **+** → **Fonte de Navegador** → nome (ex.: `DuStats placar`)
+1. **+** → **Fonte de Navegador** → nome (ex.: `DuStats faixa`)
 2. URL: a que o terminal imprimiu
 3. Largura **1920**, altura **1080**
 4. Marque **Desligar a fonte quando não estiver visível**
 5. Deixe **Atualizar navegador quando a cena ficar ativa** desmarcado
 
-Coloque os quatro na mesma cena, na ordem: `placar`, `evento`, `intervalo`,
-`resumo` (o resumo por cima). O fundo já é transparente.
+### A ordem das fontes importa
+
+Na mesma cena, de cima para baixo:
+
+```
+1. DuStats — intervalo     tela cheia
+2. Placar PRO              canto superior esquerdo
+3. DuStats — faixa         rodapé
+4. Câmera
+```
+
+O painel do intervalo precisa ficar **acima** do Placar PRO, senão o placar
+dele flutua por cima da tela cheia de estatísticas. A faixa fica abaixo por
+segurança — mas como uma mora no rodapé e o outro no topo, as duas nunca se
+tocam. O fundo dos dois já é transparente.
 
 ### Ajustes por URL
 
 | Parâmetro | Efeito |
 |---|---|
-| `placar.html?pos=tr` | Move o placar de canto: `tl`, `tr`, `bl`, `br` |
-| `placar.html?posse=0` | Esconde a barra de posse |
-| `evento.html?segundos=10` | Muda quanto tempo o selo fica no ar |
+| `faixa.html?pos=bc` | Move a faixa no rodapé: `bl` (padrão), `bc`, `br` |
+| `faixa.html?baixo=200` | Sobe a faixa, se você usa o lower third do Placar PRO no rodapé |
+| `faixa.html?segundos=8` | Muda quanto tempo a faixa fica no ar |
 | `resumo.html?exportar=1` | Mostra os botões de exportação (abra no navegador, **não** no OBS) |
 
 ## Durante o jogo
@@ -78,22 +112,46 @@ Coloque os quatro na mesma cena, na ordem: `placar`, `evento`, `intervalo`,
 Abra `/control/` no celular. Antes do apito:
 
 1. **Ajustes** → nomes, siglas, cores e escudos dos dois times
-2. **No ar** → modo **Jogo**
+2. **No ar** → **Jogo** (deixa a tela livre; só a faixa aparece, quando você chamar)
 3. **Próximo período** para sair do pré-jogo e entrar no 1º tempo
-4. **▶** quando a bola rolar
+4. **▶** junto com o cronômetro do Placar PRO
 
 Apontando:
 
 - **Posse** é o único botão que fica pressionado — troque a cada mudança de
   posse. É dele que sai a porcentagem.
-- **Gol** já entra no placar com um toque. A tela do campo que abre depois é
-  opcional: marque onde saiu se der tempo, ou feche.
+- **Gol** já entra com um toque; registre também no Placar PRO, que é quem
+  mostra o placar no ar. A tela do campo que abre depois é opcional.
 - **Finalização** pede o desfecho; o local no campo é opcional.
 - **Desfazer** apaga o último lance (ignora as trocas de posse, que você corrige
   só tocando de novo). Dá para apagar qualquer lance pela lista de baixo.
+
+Pondo estatística no ar:
+
+- Aba **No ar** → toque numa das seis estatísticas para ela subir no rodapé por
+  10 s. Botão apagado é estatística que ainda não aconteceu no jogo.
+- **Rodar sequência** encadeia posse → finalizações → escanteios, 8 s cada.
+  Boa para atendimento médico e outras paradas longas.
 - No intervalo: **No ar** → **Intervalo**. O carrossel roda sozinho a cada 12 s;
   as setas seguram ou pulam um slide.
 - No fim: **Próximo período** até `Fim de jogo`, e **No ar** → **Resumo**.
+
+### Sincronizar o relógio com o Placar PRO
+
+O DuStats tem cronômetro próprio porque posse de bola é medida em tempo e cada
+lance precisa do minuto em que caiu. Mas quem aparece na tela é o do Placar PRO,
+e os dois se afastam alguns segundos ao longo do jogo — foram iniciados por
+dedos diferentes.
+
+Na aba **No ar**, digite o tempo que está no Placar PRO e toque em **Ajustar**.
+Errou o valor? Ajuste de novo — o valor é absoluto, então o segundo substitui o
+primeiro. O botão **Desfazer** não mexe em relógio de propósito: ele é para
+apagar lance errado, e se pegasse o ajuste você apagaria um lance sem querer.
+
+Isso move só o rótulo de minuto. **Nenhuma estatística já medida muda**: a posse
+de bola e as janelas do gráfico de pressão correm num relógio interno separado,
+que o ajuste não toca — corrigir um rótulo mexendo nessa base estragaria número
+que ninguém iria conferir.
 
 ### Atalhos de teclado
 
@@ -157,12 +215,24 @@ arquiva o atual.
 **O celular não abre o painel.** Confira que ele está no mesmo Wi-Fi. Se ainda
 assim não abrir, é o firewall do Windows: libere o Node.js na rede privada.
 
-**O overlay ficou preto no OBS.** Ele está fora do modo dele — verifique a aba
-**No ar** do painel. O `intervalo.html` só aparece no modo Intervalo.
+**O overlay ficou preto no OBS.** Está tudo certo: os dois só desenham quando
+têm o que mostrar. O `intervalo.html` fica vazio fora do modo Intervalo, e a
+`faixa.html` só aparece nos 10 s depois de você chamar uma estatística.
 
-**O cronômetro travou.** O relógio do overlay continua contando no navegador
-mesmo sem rede; se o placar parou de atualizar, o painel mostra um aviso
-vermelho de "sem conexão".
+**Chamei a faixa e não apareceu nada.** Ou o painel está em modo Intervalo ou
+Resumo (a tela cheia esconde a faixa de propósito), ou a estatística ainda não
+aconteceu no jogo — nesse caso o botão no celular está apagado.
+
+**O Placar PRO some no intervalo.** É o esperado: o painel de estatísticas em
+tela cheia fica acima dele na ordem das fontes. Se acontecer o contrário — o
+placar flutuando por cima das estatísticas — a ordem está invertida.
+
+**O minuto do DuStats não bate com o do Placar PRO.** Normal, são cronômetros
+independentes. Aba **No ar** → digite o tempo do Placar PRO → **Ajustar**.
+
+**O cronômetro travou.** O relógio continua contando no navegador mesmo sem
+rede; se o painel parou de atualizar, ele mostra um aviso vermelho de
+"sem conexão".
 
 **Perdi um lance porque o Wi-Fi caiu.** Não perdeu: o painel guarda os lances no
 próprio celular e manda todos assim que a conexão volta.
@@ -211,6 +281,11 @@ depois sem reescrever nada.
 gráficos. Os gráficos são SVG escrito à mão e o card do Instagram é desenhado
 direto em `<canvas>`. No campo o PC pode estar sem rede, e um overlay que entra
 no ar sem fonte não tem conserto no meio do jogo.
+
+**Um número, um lugar.** A faixa do rodapé não recalcula nada: ela procura a
+linha pelo rótulo na mesma lista comparativa que alimenta o painel do intervalo
+(`linhasComparativas()`, em `server/stats.js`). Assim é impossível o rodapé
+mostrar 58% de posse e o painel do intervalo mostrar 57%.
 
 As dependências de produção são duas: `express` e `ws`.
 

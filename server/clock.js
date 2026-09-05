@@ -53,6 +53,13 @@ function aplicar(relogio, evento, esporte) {
     } else if (meta.acao === 'pausar' && relogio.rodando) {
       relogio.rodando = false;
       relogio.ultimoInicio = null;
+    } else if (meta.acao === 'ajustar') {
+      // Realinha o minuto exibido com o cronômetro que está no ar (o do Placar
+      // PRO). Mexe SÓ em tPeriodo: tTotal é a base da posse de bola e das
+      // janelas do gráfico de pressão, e corrigir um rótulo movendo essa base
+      // corromperia estatística já medida — um erro que ninguém perceberia,
+      // porque ninguém confere posse de bola contra cronômetro.
+      relogio.tPeriodo = Math.max(0, Number(meta.paraMs) || 0);
     }
   } else if (evento.type === 'periodo') {
     const alvo = Number.isInteger(meta.idx) ? meta.idx : relogio.periodoIdx + 1;

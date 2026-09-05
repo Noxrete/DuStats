@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>DuStats — Faixa de estatística</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/shared/tema.css">
+<style>
+  /*
+   * Faixa de uma estatística, chamada pelo celular durante o jogo.
+   *
+   * Fica ancorada no RODAPÉ porque o Placar PRO ocupa o canto superior
+   * esquerdo. As duas peças nunca se tocam: uma mora em cima, a outra embaixo.
+   */
+  #faixa {
+    position: absolute;
+    left: var(--lado-esq, 60px);
+    right: var(--lado-dir, auto);
+    bottom: var(--baixo, 96px);
+    width: 880px;
+    padding: 18px 26px 20px;
+    border-radius: 10px;
+    background: var(--painel);
+    box-shadow: var(--sombra);
+    opacity: 0;
+    transform: translateX(-70px);
+    transition: opacity 340ms ease, transform 520ms cubic-bezier(.22, 1, .36, 1);
+  }
+  #faixa.no-ar { opacity: 1; transform: none; }
+
+  .rotulo-faixa {
+    font-size: 17px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--texto-fraco);
+    margin-bottom: 12px;
+  }
+
+  .linha-faixa {
+    display: grid;
+    grid-template-columns: auto 96px 1fr 96px auto;
+    align-items: center;
+    gap: 18px;
+  }
+
+  .time-faixa {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: .05em;
+  }
+  .time-faixa i {
+    width: 7px;
+    height: 30px;
+    border-radius: 2px;
+    background: var(--cor);
+  }
+  .time-faixa.fora { flex-direction: row-reverse; }
+
+  .valor-faixa { font-size: 42px; font-weight: 700; line-height: 1; }
+  .valor-faixa.esq { text-align: right; }
+  .valor-faixa.lider-casa { color: var(--cor-casa); }
+  .valor-faixa.lider-fora { color: var(--cor-fora); }
+
+  #faixa .trilho { height: 14px; }
+</style>
+</head>
+<body class="overlay">
+
+<div id="faixa">
+  <div class="rotulo-faixa" id="rotulo"></div>
+  <div class="linha-faixa">
+    <span class="time-faixa casa" style="--cor: var(--cor-casa)"><i></i><span id="siglaCasa"></span></span>
+    <span class="valor-faixa esq num" id="valorCasa"></span>
+    <div class="trilho">
+      <span class="casa" id="barraCasa" style="width:50%"></span>
+      <span class="fora" id="barraFora" style="width:50%"></span>
+    </div>
+    <span class="valor-faixa dir num" id="valorFora"></span>
+    <span class="time-faixa fora" style="--cor: var(--cor-fora)"><i></i><span id="siglaFora"></span></span>
+  </div>
+</div>
+
+<script src="/shared/bus.js"></script>
+<script src="/shared/overlay.js"></script>
+<script>
+'use strict';
+
+const faixa = document.getElementById('faixa');
+const { overlay } = DuStats;
+const params = overlay.parametros;
+
+const DURACAO = Number(params.get('segundos') || 10) * 1000;
+
+// Posições possíveis no rodapé. O padrão é a esquerda, que é onde a televisão
+// põe esse tipo de dado — e o Placar PRO está no topo, então não há colisão.
+const POSICOES = {
+  bl: { '--lado-esq': '60px', '--lado-dir': 'auto' },
+  bc: { '--lado-esq': '520px', '--lado-dir': 'auto' },
+  br: { '--lado-esq': 'auto', '--lado-dir': '60px' }
+};
+for (const [chave, valor] of Object.entries(POSICOES[params.get('pos')] || POSICOES.bl)) {
+  faixa.style.setProperty(chave, valor);
+}
+// ?baixo= sobe a faixa, para quem usa o lower third do Placar PRO no rodapé.
+if (params.get('baixo')) faixa.style.setProperty('--baixo', `${Number(params.get('baixo'))}px`);
+
+let temporizador = null;
+let ultimoDisparo = 0;
+
+function esconder() {
+  faixa.classList.remove('no-ar');
+  clearTimeout(temporizador);
+}
+
+function mostrar(linha, estado) {
+  document.getElementById('rotulo').textContent = linha.rotulo;
+  document.getElementById('siglaCasa').textContent = overlay.sigla(estado.config, 'casa');
+  document.getElementById('siglaFora').textContent = overlay.sigla(estado.config, 'fora');
+
+  const sufixo = linha.sufixo || '';
+  const total = linha.casa + linha.fora;
+  const fatiaCasa = total > 0 ? (linha.casa / total) * 100 : 50;
+
+  const lider = !linha.destacar || linha.casa === linha.fora
+    ? '' : (linha.casa > linha.fora ? 'casa' : 'fora');
+
+  const valorCasa = document.getElementById('valorCasa');
+  const valorFora = document.getElementById('valorFora');
+  valorCasa.textContent = `${linha.casa}${sufixo}`;
+  valorFora.textContent = `${linha.fora}${sufixo}`;
+  valorCasa.className = `valor-faixa esq num ${lider === 'casa' ? 'lider-casa' : ''}`;
+  valorFora.className = `valor-faixa dir num ${lider === 'fora' ? 'lider-fora' : ''}`;
+
+  document.getElementById('barraCasa').style.width = `${fatiaCasa}%`;
+  document.getElementById('barraFora').style.width = `${100 - fatiaCasa}%`;
+
+  faixa.classList.add('no-ar');
+  // Um segundo disparo durante a animação troca o conteúdo e reinicia a
+  // contagem, em vez de empilhar uma faixa em cima da outra.
+  clearTimeout(temporizador);
+  temporizador = setTimeout(esconder, DURACAO);
+}
+
+DuStats.aoEstado((estado) => {
+  const pedido = estado.transmissao.faixa;
+
+  // Tela cheia no ar tira a faixa: ela ficaria por baixo do painel do intervalo
+  // e reapareceria sozinha no fim, no meio da volta do jogo.
+  if (['intervalo', 'resumo'].includes(estado.transmissao.modo)) return esconder();
+
+  if (!pedido || !pedido.em) return esconder();
+  if (pedido.em === ultimoDisparo) return;
+  ultimoDisparo = pedido.em;
+
+  // Um disparo antigo, reaproveitado de um snapshot na hora que o overlay
+  // abriu, não pode subir ao ar sozinho.
+  if (DuStats.agoraServidor() - pedido.em > DURACAO) return;
+
+  const linha = (estado.comparativo || []).find((l) => l.rotulo === pedido.rotulo);
+  if (!linha) return; // estatística que ainda não existe neste jogo
+  mostrar(linha, estado);
+});
+</script>
+</body>
+</html>

@@ -127,3 +127,23 @@ test('a lista comparativa esconde cartões quando não houve nenhum', () => {
   const comCartaoRotulos = stats.linhasComparativas(comCartao).map((l) => l.rotulo);
   assert.ok(comCartaoRotulos.includes('Cartões vermelhos'));
 });
+
+test('sincronizar o relógio com o Placar PRO não mexe na posse de bola', () => {
+  const semAjuste = stats.derivar(JOGO, esporte, AGORA);
+
+  // O mesmo jogo, com um realinhamento de relógio no meio do 1º tempo.
+  const comAjuste = stats.derivar([
+    ...JOGO.slice(0, 6),
+    ev(200_000, 'relogio', null, { acao: 'ajustar', paraMs: 30 * 60_000 }),
+    ...JOGO.slice(6)
+  ], esporte, AGORA);
+
+  assert.equal(comAjuste.posse.msCasa, semAjuste.posse.msCasa);
+  assert.equal(comAjuste.posse.msFora, semAjuste.posse.msFora);
+  assert.equal(comAjuste.relogio.tTotal, semAjuste.relogio.tTotal);
+  assert.deepEqual(comAjuste.momentum, semAjuste.momentum, 'as janelas de pressão não podem deslizar');
+
+  const golDepois = comAjuste.eventos.find((e) => e.type === 'escanteio');
+  assert.notEqual(golDepois.minuto, semAjuste.eventos.find((e) => e.type === 'escanteio').minuto,
+    'mas o rótulo de minuto tem que acompanhar o ajuste');
+});

@@ -174,10 +174,25 @@
   }
   input[type="color"] { padding: 4px; height: 46px; }
   .dupla { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .links { display: grid; gap: 6px; font-size: 13px; }
+  .links { display: grid; gap: 14px; font-size: 13px; }
   .links code {
     display: block; background: #05070b; padding: 10px; border-radius: 4px;
     word-break: break-all; color: #8fd3ff; font-family: ui-monospace, monospace;
+    margin: 4px 0;
+  }
+  .links small { color: var(--texto-fraco); font-size: 12px; line-height: 1.4; }
+
+  .faixas { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .faixas button { padding: 16px 6px; font-size: 14px; }
+  .faixas button[disabled] { opacity: .3; }
+  .faixas button.no-ar { background: var(--vermelho); }
+
+  .sincronia { display: grid; grid-template-columns: 1fr auto 1fr auto; gap: 8px; align-items: center; }
+  .sincronia input { text-align: center; }
+  .sincronia .doispontos { font-size: 22px; font-weight: 700; opacity: .5; }
+  input[type="number"] {
+    width: 100%; padding: 12px; font-family: inherit; font-size: 18px;
+    background: #1b2432; border: 1px solid var(--linha); border-radius: 6px; color: #fff;
   }
   .aviso-inline { font-size: 13px; color: var(--texto-fraco); line-height: 1.5; }
 
@@ -248,16 +263,31 @@
 
   <!-- --------------------------------------------------------------- AR -->
   <section class="aba" id="aba-ar" hidden>
+    <div class="cartao">
+      <h3>Estatística no ar — faixa do rodapé</h3>
+      <div class="faixas" id="botoesFaixa"></div>
+      <div class="modal-acoes" style="margin-top:8px">
+        <button class="b-fantasma" id="btEsconderFaixa">Esconder agora</button>
+        <button id="btSequencia">Rodar sequência</button>
+      </div>
+      <p class="aviso-inline">
+        Cada toque põe uma estatística no rodapé por 10 s. A sequência roda posse,
+        finalizações e escanteios em seguida — boa para paradas longas.
+        Botão apagado é estatística que ainda não aconteceu no jogo.
+      </p>
+    </div>
+
     <div class="cartao ar">
-      <h3>O que está no ar</h3>
+      <h3>Painel em tela cheia</h3>
       <div class="modos">
         <button data-modo="jogo">Jogo</button>
         <button data-modo="intervalo">Intervalo</button>
         <button data-modo="resumo">Resumo</button>
       </div>
       <p class="aviso-inline">
-        <strong>Jogo</strong> mostra só o placar. <strong>Intervalo</strong> roda o carrossel
-        de estatísticas em tela cheia. <strong>Resumo</strong> é o painel de fim de jogo.
+        <strong>Jogo</strong> deixa a tela livre — só a faixa do rodapé aparece, quando você
+        chamar. <strong>Intervalo</strong> roda o carrossel em tela cheia.
+        <strong>Resumo</strong> é o painel de fim de jogo.
       </p>
       <div class="slides">
         <button class="b-fantasma" id="btAnterior">◀</button>
@@ -280,6 +310,23 @@
         <button data-acrescimo="5">+5 min</button>
         <button class="b-fantasma largo" data-acrescimo="0">Limpar acréscimos</button>
       </div>
+    </div>
+
+    <div class="cartao">
+      <h3>Sincronizar com o Placar PRO</h3>
+      <p class="aviso-inline">
+        Quem aparece na tela é o cronômetro do Placar PRO. O DuStats tem o dele só para
+        medir posse e marcar o minuto dos lances, e os dois se afastam alguns segundos
+        ao longo do jogo. Digite o tempo que está no Placar PRO para realinhar.
+        <strong>Isso não altera nenhuma estatística já medida.</strong>
+      </p>
+      <div class="sincronia">
+        <input type="number" id="sincMin" min="0" max="130" inputmode="numeric" placeholder="min">
+        <span class="doispontos">:</span>
+        <input type="number" id="sincSeg" min="0" max="59" inputmode="numeric" placeholder="seg">
+        <button id="btSincronizar">Ajustar</button>
+      </div>
+      <p class="aviso-inline" id="sincAtual"></p>
     </div>
   </section>
 

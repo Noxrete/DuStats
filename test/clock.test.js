@@ -84,3 +84,38 @@ test('fora dos tempos de jogo o minuto não herda a base do 2º tempo', () => {
   const idxIntervalo = esporte.periodos.findIndex((p) => p.id === 'INTERVALO');
   assert.equal(clock.formatarMinuto(0, esporte, idxIntervalo), '1');
 });
+
+test('ajustar realinha o minuto exibido sem tocar na base da posse', () => {
+  const { estado } = rodar([
+    ev(0, 'periodo', null, {}),                                        // PRE -> 1T
+    ev(0, 'relogio', null, { acao: 'iniciar' }),
+    // Aos 2 min de relógio próprio, o Placar PRO está marcando 5:00.
+    ev(120_000, 'relogio', null, { acao: 'ajustar', paraMs: 300_000 })
+  ], 180_000);
+
+  assert.equal(estado.tPeriodo, 360_000, 'o minuto exibido segue a partir do valor ajustado');
+  assert.equal(estado.tTotal, 180_000, 'o tempo de bola rolando não pode ser reescrito');
+  assert.equal(estado.rodando, true, 'ajustar não pausa o jogo');
+});
+
+test('ajustar com valor inválido não quebra nem zera o relógio', () => {
+  const { estado } = rodar([
+    ev(0, 'periodo', null, {}),
+    ev(0, 'relogio', null, { acao: 'iniciar' }),
+    ev(60_000, 'relogio', null, { acao: 'ajustar', paraMs: -5000 })
+  ], 90_000);
+
+  assert.equal(estado.tPeriodo, 30_000, 'valor negativo vira zero e o relógio segue de lá');
+});
+
+test('o minuto de transmissão respeita o ajuste, inclusive nos acréscimos', () => {
+  const { relogio, marcas } = rodar([
+    ev(0, 'periodo', null, {}),
+    ev(0, 'relogio', null, { acao: 'iniciar' }),
+    ev(60_000, 'relogio', null, { acao: 'ajustar', paraMs: 45 * 60_000 }),
+    ev(90_000, 'gol', 'casa')
+  ], 90_000);
+
+  const marcaDoGol = marcas[3];
+  assert.equal(clock.formatarMinuto(marcaDoGol.tPeriodo, esporte, relogio.periodoIdx), '45+1');
+});

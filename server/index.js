@@ -104,10 +104,19 @@ app.delete('/api/eventos/:id', exigirToken, (req, res) => {
 });
 
 app.post('/api/transmissao', exigirToken, (req, res) => {
-  const { modo, slide } = req.body || {};
+  const { modo, slide, faixa } = req.body || {};
   const parcial = {};
   if (typeof modo === 'string') parcial.modo = modo;
   if (Number.isInteger(slide)) parcial.slide = slide;
+
+  // A faixa é um disparo, não um estado: o painel manda o rótulo e o instante,
+  // e o overlay usa a mudança de `em` como gatilho da animação. `null` esconde.
+  if (faixa === null) {
+    parcial.faixa = null;
+  } else if (faixa && typeof faixa.rotulo === 'string') {
+    parcial.faixa = { rotulo: faixa.rotulo, em: Date.now() };
+  }
+
   partida.definirTransmissao(parcial);
   persistirEPublicar();
   res.json({ ok: true, transmissao: partida.transmissao });
@@ -208,9 +217,14 @@ servidor.listen(PORTA, () => {
   for (const host of hosts) console.log(`     http://${host}:${PORTA}/control/`);
   console.log('');
   console.log('  OVERLAYS — adicione como Fonte de Navegador no OBS, 1920x1080:');
-  for (const pagina of ['placar', 'evento', 'intervalo', 'resumo']) {
-    console.log(`     ${pagina.padEnd(9)} http://${principal}:${PORTA}/overlay/${pagina}.html`);
+  for (const [pagina, papel] of [['faixa', 'rodapé, sob demanda'], ['intervalo', 'tela cheia']]) {
+    console.log(`     ${pagina.padEnd(9)} http://${principal}:${PORTA}/overlay/${pagina}.html   (${papel})`);
   }
+  console.log('');
+  console.log('  RESUMO PÓS-JOGO (abra no navegador, não no OBS):');
+  console.log(`     http://${principal}:${PORTA}/overlay/resumo.html?exportar=1`);
+  console.log('');
+  console.log('  Placar, cronômetro e replay são do Placar PRO — o DuStats só faz estatística.');
   console.log('');
   if (TOKEN) console.log('  Token de escrita ATIVO (DUSTATS_TOKEN).\n');
 });

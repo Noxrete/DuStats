@@ -136,3 +136,22 @@ test('horário informado pelo cliente é preso entre o último evento e agora', 
   const futuro = p.adicionar({ type: 'escanteio', team: 'casa', wall: agora + 3_600_000 });
   assert.ok(futuro.wall <= Date.now(), 'não pode gravar no futuro');
 });
+
+test('desfazer não mexe no ajuste de relógio — ele se corrige sozinho', () => {
+  const p = novaPartida();
+  p.adicionar({ type: 'relogio', meta: { acao: 'iniciar' } });
+  p.adicionar({ type: 'escanteio', team: 'casa' });
+  p.adicionar({ type: 'relogio', meta: { acao: 'ajustar', paraMs: 23 * 60_000 } });
+
+  // O apontador aperta DESFAZER querendo apagar o escanteio errado. Se o undo
+  // pegasse o ajuste de relógio, ele apertaria duas vezes e apagaria um lance
+  // que não queria — por isso controle de relógio nunca entra na fila do undo.
+  assert.equal(p.proximoParaDesfazer().type, 'escanteio');
+  assert.equal(p.desfazer().type, 'escanteio');
+  assert.ok(p.eventos.some((e) => e.meta?.acao === 'ajustar'), 'o ajuste continua lá');
+
+  // Errou o valor? Ajusta de novo: `paraMs` é absoluto, então o segundo ajuste
+  // substitui o primeiro por completo.
+  p.adicionar({ type: 'relogio', meta: { acao: 'ajustar', paraMs: 32 * 60_000 } });
+  assert.ok(p.derivar().relogio.tPeriodo >= 32 * 60_000);
+});
