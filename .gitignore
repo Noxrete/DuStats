@@ -1,0 +1,5 @@
+node_modules/
+data/matches/
+data/atual.txt
+public/logos/
+*.log

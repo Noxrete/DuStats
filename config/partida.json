@@ -1,0 +1,20 @@
+{
+  "competicao": "Campeonato Amador",
+  "rodada": "",
+  "local": "",
+  "acento": "#17b64a",
+  "casa": {
+    "nome": "Time da Casa",
+    "sigla": "CAS",
+    "cor": "#1f6feb",
+    "corTexto": "#ffffff",
+    "escudo": ""
+  },
+  "fora": {
+    "nome": "Time Visitante",
+    "sigla": "VIS",
+    "cor": "#d92d20",
+    "corTexto": "#ffffff",
+    "escudo": ""
+  }
+}
