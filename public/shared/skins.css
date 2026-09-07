@@ -1,0 +1,336 @@
+/*
+ * Skins das peças que entram no ar.
+ *
+ * Carregado DEPOIS de tema.css e paineis.css. Sem `data-skin` no <html>, ou com
+ * `placar`, nada aqui casa e a aparência original fica intacta — a skin padrão
+ * é literalmente a ausência de skin.
+ *
+ * A maior parte do desenho já vem dos tokens que tema.css define (--navy,
+ * --raio, --sombra…), então cada skin começa redefinindo tokens e só depois
+ * toca em regras específicas. É o que mantém este arquivo legível: quem lê vê
+ * a intenção da skin no bloco de tokens, não espalhada em trinta seletores.
+ *
+ * Duas coisas valem para todas:
+ *
+ *  - `backdrop-filter` NÃO é usado em lugar nenhum. No OBS a Fonte de Navegador
+ *    é uma camada separada com fundo transparente: o vídeo não está na página,
+ *    então não há o que desfocar. Vidro fosco de verdade é impossível aqui, e
+ *    tentar custaria CPU sem produzir efeito.
+ *
+ *  - Nada anima por JavaScript quadro a quadro. Animação em CSS roda no
+ *    compositor do navegador; laço de JS disputa CPU com o encoder do OBS, no
+ *    mesmo PC, durante a transmissão.
+ */
+
+/* ══════════════════════════════════════════════════════════ 1. VIDRO ══════
+ *
+ * Material. A peça é uma lâmina translúcida que pousa sobre o vídeo: cantos
+ * largos, um fio de luz na borda de cima e um grão fino para não parecer
+ * plástico. O acento vira fio luminoso, não bloco.
+ */
+
+[data-skin="vidro"] {
+  --navy-fundo: rgba(9, 14, 34, .74);
+  --navy: rgba(11, 17, 44, .76);
+  --navy-claro: rgba(255, 255, 255, .14);
+  --navy-borda: rgba(255, 255, 255, .22);
+  --raio: 18px;
+  --sombra: 0 24px 60px rgba(0, 0, 0, .55);
+  --linha: rgba(255, 255, 255, .16);
+  /* Sobre grama de sol a peça clareia, e o cinza-azulado padrão do texto
+     secundário desaparece. Aqui ele precisa ser bem mais claro que no navy. */
+  --texto-fraco: #cdd6ea;
+}
+
+/* O grão é uma textura RASTERIZADA uma vez a partir deste SVG e repetida como
+   imagem de fundo. Não é um filtro vivo: `filter` em 1920 × 1080 recalcularia a
+   cada quadro, no mesmo PC que está codificando o vídeo. */
+[data-skin="vidro"] .painel-cheio,
+[data-skin="vidro"] .faixa {
+  background-color: rgba(11, 17, 44, .74);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23g)' opacity='.05'/%3E%3C/svg%3E"),
+    linear-gradient(155deg, rgba(255, 255, 255, .16) 0%, rgba(255, 255, 255, .04) 38%, rgba(255, 255, 255, 0) 70%);
+  border: 1px solid var(--navy-borda);
+  box-shadow: var(--sombra), inset 0 1px 0 rgba(255, 255, 255, .28);
+}
+
+/* O fio de luz do topo: quase todo branco translúcido, com um trecho curto na
+   cor da transmissão. É o único lugar onde o acento aparece nesta skin, e é
+   isso que a mantém discreta. */
+[data-skin="vidro"] .painel-cheio::before,
+[data-skin="vidro"] .faixa::before {
+  height: 1px;
+  background: linear-gradient(90deg,
+    var(--acento) 0%, var(--acento) 14%,
+    rgba(255, 255, 255, .55) 14%, rgba(255, 255, 255, .05) 100%);
+}
+
+/* A peça MATERIALIZA em vez de deslizar: vem um pouco maior e assenta. */
+[data-skin="vidro"] .painel-cheio { transform: scale(1.04); }
+[data-skin="vidro"] .cena-painel.no-ar .painel-cheio {
+  transform: none;
+  transition: opacity 380ms ease-out 60ms, transform 720ms cubic-bezier(.16, 1, .3, 1) 60ms;
+}
+/* Saída: escala sobe enquanto some — evaporando, não recuando. */
+[data-skin="vidro"] .cena-painel .painel-cheio {
+  transition: opacity 240ms ease-in, transform 300ms ease-in;
+}
+[data-skin="vidro"] .faixa { transform: translateY(22px) scale(1.03); }
+[data-skin="vidro"] .faixa.no-ar {
+  transform: none;
+  transition: opacity 340ms ease-out, transform 640ms cubic-bezier(.16, 1, .3, 1);
+}
+
+[data-skin="vidro"] .trilho {
+  background: rgba(0, 0, 0, .28);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .10);
+}
+[data-skin="vidro"] .rotulo-faixa { background: rgba(255, 255, 255, .07); }
+[data-skin="vidro"] .competicao,
+[data-skin="vidro"] .placar-grande { background: rgba(255, 255, 255, .07); }
+
+/* ══════════════════════════════════════════════════════════ 2. TRAÇO ══════
+ *
+ * Ausência. Nenhum painel preenchido: filetes, réguas e tipografia direto sobre
+ * o vídeo. É a skin mais elegante e a mais arriscada — grama ensolarada come
+ * texto sem fundo —, por isso o véu escuro atrás da tipografia não é opcional.
+ */
+
+[data-skin="traco"] {
+  --navy-borda: rgba(255, 255, 255, .30);
+  --texto-fraco: rgba(255, 255, 255, .72);
+  --raio: 0px;
+}
+
+[data-skin="traco"] .painel-cheio,
+[data-skin="traco"] .faixa {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  /* O véu é o que compra legibilidade sem devolver o painel: escuro no centro,
+     dissolvendo nas bordas, então a peça continua sem contorno visível. */
+  background-image: radial-gradient(115% 90% at 50% 50%,
+    rgba(4, 7, 18, .78) 0%, rgba(4, 7, 18, .55) 55%, rgba(4, 7, 18, 0) 100%);
+}
+[data-skin="traco"] .painel-cheio::before,
+[data-skin="traco"] .faixa::before { display: none; }
+
+[data-skin="traco"] .cabecalho,
+[data-skin="traco"] .linha-comp .rotulo-linha,
+[data-skin="traco"] .rotulo-faixa {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .9);
+}
+[data-skin="traco"] .linha-comp .valor,
+[data-skin="traco"] .valor-faixa,
+[data-skin="traco"] .placar-grande {
+  text-shadow: 0 2px 8px rgba(0, 0, 0, .85);
+}
+
+/* A ASSINATURA: a régua se desenha da esquerda para a direita.
+   É `width`, não `stroke-dashoffset`: para uma linha reta o resultado na tela é
+   o mesmo, e assim nenhuma peça precisa trocar HTML por SVG. */
+[data-skin="traco"] .rotulo-faixa,
+[data-skin="traco"] .linha-comp .rotulo-linha {
+  position: relative;
+  background: none;
+}
+[data-skin="traco"] .rotulo-faixa::after,
+[data-skin="traco"] .linha-comp .rotulo-linha::after {
+  content: '';
+  position: absolute; left: 0; bottom: -6px;
+  height: 2px; width: 0;
+  background: var(--acento);
+}
+[data-skin="traco"] .faixa.no-ar .rotulo-faixa::after,
+[data-skin="traco"] .slide.ativo .linha-comp .rotulo-linha::after {
+  animation: tracoRisca 420ms cubic-bezier(.16, 1, .3, 1) forwards;
+  animation-delay: calc(var(--ordem, 0) * 55ms + 120ms);
+}
+@keyframes tracoRisca { to { width: 100%; } }
+
+[data-skin="traco"] .trilho {
+  height: 4px;
+  border-radius: 0;
+  background: rgba(255, 255, 255, .18);
+  box-shadow: none;
+}
+[data-skin="traco"] .pontinhos i { border-radius: 0; height: 2px; }
+
+/* ═══════════════════════════════════════════════════════ 3. BANDEIRA ══════
+ *
+ * Clube. Aqui a cor da transmissão é a ESTRUTURA, não o detalhe: um campo
+ * diagonal atravessa a peça e o conteúdo entra atrás dele, como bandeira sendo
+ * puxada.
+ */
+
+[data-skin="bandeira"] {
+  --navy-fundo: #0a1024;
+  --navy: #0e1533;
+  --navy-claro: #16204a;
+  --navy-borda: var(--acento);
+  --raio: 4px;
+  --texto-fraco: #b9c6e4;
+}
+
+[data-skin="bandeira"] .painel-cheio,
+[data-skin="bandeira"] .faixa {
+  border: 1px solid rgba(255, 255, 255, .10);
+  border-left: 5px solid var(--acento);
+  overflow: hidden;
+}
+
+/* O campo diagonal, com galões. `repeating-linear-gradient` em vez de um
+   <pattern> SVG: o desenho é o mesmo e não exige injetar defs em cada página. */
+[data-skin="bandeira"] .painel-cheio::after,
+[data-skin="bandeira"] .faixa::after {
+  content: '';
+  position: absolute; inset: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(135deg,
+      rgba(255, 255, 255, .07) 0 14px,
+      rgba(255, 255, 255, 0) 14px 28px),
+    linear-gradient(108deg,
+      var(--acento) 0%, var(--acento) 20%, var(--acento-escuro) 40%, transparent 40%);
+  /* Forte o bastante para ser lida como campo, e não como um esfumado azulado
+     em cima do navy. Abaixo de ~0.3 ela vira sujeira; acima de ~0.45 come o
+     texto que passa por cima. */
+  opacity: .38;
+  /* A bandeira morre antes de chegar nos dados. Atravessando a peça inteira,
+     ela punha o vermelho do time da casa sobre campo verde e os números da
+     esquerda ficavam ilegíveis — a skin comendo o dado que ela existe para
+     mostrar. Emoldurando só o cabeçalho, o verde continua sendo estrutura e as
+     barras ficam sobre navy limpo. */
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 26%, transparent 58%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 26%, transparent 58%);
+  /* A varredura: o campo entra cortado à esquerda e abre para a direita. */
+  clip-path: polygon(0 0, 0 0, 0 100%, 0 100%);
+}
+[data-skin="bandeira"] .cena-painel.no-ar .painel-cheio::after,
+[data-skin="bandeira"] .faixa.no-ar::after {
+  animation: bandeiraVarrer 780ms cubic-bezier(.16, 1, .3, 1) forwards;
+}
+@keyframes bandeiraVarrer {
+  to { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
+}
+
+/* O campo diagonal é um pseudo-elemento posicionado, e por isso pinta ACIMA do
+   conteúdo em fluxo normal. Sem esta linha o verde passa por cima das barras e
+   o vermelho do time da casa sai alaranjado — a cor do clube, adulterada pela
+   skin. O conteúdo sobe uma camada e a bandeira volta para trás dele. */
+[data-skin="bandeira"] .painel-cheio > *,
+[data-skin="bandeira"] .faixa > * {
+  position: relative;
+  z-index: 1;
+}
+
+[data-skin="bandeira"] .painel-cheio::before,
+[data-skin="bandeira"] .faixa::before {
+  height: 5px;
+  background: var(--acento);
+  z-index: 2;
+}
+
+/* Tarja cheia de verde no rótulo tirava o verde do lugar dele: se tudo é
+   acento, nada é estrutura. O chip volta a ser escuro e o verde fica só na
+   aresta — e o rótulo passa a abraçar o texto em vez de atravessar a peça. */
+[data-skin="bandeira"] .competicao {
+  background: rgba(0, 0, 0, .42);
+  box-shadow: inset 3px 0 0 var(--acento);
+}
+[data-skin="bandeira"] .rotulo-faixa {
+  display: inline-flex;
+  background: rgba(0, 0, 0, .42);
+  box-shadow: inset 3px 0 0 var(--acento);
+}
+[data-skin="bandeira"] .trilho { border-radius: 2px; }
+/* O cabeçalho é a parte que fica por cima do verde; só ele precisa da sombra. */
+[data-skin="bandeira"] .cabecalho { text-shadow: 0 1px 4px rgba(0, 0, 0, .75); }
+
+/* ════════════════════════════════════════════════════════ 4. ESTÁDIO ══════
+ *
+ * Luz. Painel quase preto com aresta de neon e um holofote por trás dos
+ * números. É a que mais aguenta grama clara, por contraste puro — e a que fica
+ * melhor em jogo noturno.
+ */
+
+[data-skin="estadio"] {
+  --navy-fundo: #05070d;
+  --navy: #070a12;
+  --navy-claro: #0c111c;
+  --navy-borda: rgba(255, 255, 255, .08);
+  --texto-fraco: #7c8ba8;
+  --raio: 3px;
+  --sombra: 0 18px 50px rgba(0, 0, 0, .8);
+}
+
+[data-skin="estadio"] .painel-cheio,
+[data-skin="estadio"] .faixa {
+  background:
+    radial-gradient(75% 55% at 50% 40%, rgba(255, 255, 255, .07) 0%, transparent 70%),
+    linear-gradient(180deg, var(--navy-claro) 0%, var(--navy-fundo) 100%);
+  border: 1px solid rgba(255, 255, 255, .07);
+  box-shadow: var(--sombra), 0 0 0 1px var(--acento), 0 0 38px -8px var(--acento);
+}
+
+/* A LUZ ACENDE: a peça entra escura e a aresta dá uma cintilada antes de
+   firmar. É o gesto que dá nome à skin, e ele mora todo neste keyframe. */
+[data-skin="estadio"] .cena-painel.no-ar .painel-cheio,
+[data-skin="estadio"] .faixa.no-ar {
+  animation: estadioAcender 620ms ease-out both;
+}
+@keyframes estadioAcender {
+  0%   { box-shadow: var(--sombra), 0 0 0 1px rgba(255, 255, 255, .04), 0 0 0 -8px transparent; }
+  38%  { box-shadow: var(--sombra), 0 0 0 1px var(--acento), 0 0 46px -4px var(--acento); }
+  56%  { box-shadow: var(--sombra), 0 0 0 1px rgba(255, 255, 255, .18), 0 0 18px -10px var(--acento); }
+  100% { box-shadow: var(--sombra), 0 0 0 1px var(--acento), 0 0 38px -8px var(--acento); }
+}
+
+[data-skin="estadio"] .painel-cheio::before,
+[data-skin="estadio"] .faixa::before {
+  height: 2px;
+  background: var(--acento);
+  box-shadow: 0 0 12px var(--acento);
+}
+
+[data-skin="estadio"] .trilho {
+  height: 10px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, .05);
+  box-shadow: none;
+}
+/* A cabeça da barra sai mais quente que o corpo, como um facho que arrasta. */
+[data-skin="estadio"] .trilho .casa,
+[data-skin="estadio"] .trilho .fora {
+  box-shadow: inset -10px 0 14px -8px rgba(255, 255, 255, .95);
+}
+[data-skin="estadio"] .trilho .fora {
+  box-shadow: inset 10px 0 14px -8px rgba(255, 255, 255, .95);
+}
+
+[data-skin="estadio"] .competicao,
+[data-skin="estadio"] .rotulo-faixa,
+[data-skin="estadio"] .placar-grande {
+  background: rgba(255, 255, 255, .04);
+}
+[data-skin="estadio"] .pontinhos i.ativo { box-shadow: 0 0 10px var(--acento); }
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+
+/* Quem configurou o sistema para reduzir movimento não perde a skin, só o
+   gesto: as peças continuam com sua aparência e aparecem sem coreografia. */
+@media (prefers-reduced-motion: reduce) {
+  [data-skin] .painel-cheio,
+  [data-skin] .faixa,
+  [data-skin] .cena-painel.no-ar .painel-cheio,
+  [data-skin] .faixa.no-ar,
+  [data-skin] .painel-cheio::after,
+  [data-skin] .faixa::after,
+  [data-skin] .rotulo-faixa::after,
+  [data-skin] .linha-comp .rotulo-linha::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+  }
+}

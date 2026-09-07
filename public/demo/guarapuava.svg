@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 116" width="100" height="116" role="img" aria-label="Guarapuava">
+  <!--
+    ESCUDO SUBSTITUTO, só para a demonstração das skins. Ver o comentário em
+    charrua.svg. O verde daqui é o que expõe a colisão com a cor de acento na
+    skin Bandeira — é de propósito que ele seja o verde do clube.
+  -->
+  <path d="M50 2 96 16v48c0 28-22 42-46 50C26 106 4 92 4 64V16Z" fill="#0d0d0f"/>
+  <path d="M50 8 90 20v44c0 24-19 36-40 43C29 100 10 88 10 64V20Z" fill="#1f8f3a"/>
+  <g fill="#0d0d0f">
+    <path d="M22 20h9v76a58 58 0 0 1-9-9Z"/>
+    <path d="M40 20h9v88l-9-5Z"/>
+    <path d="M58 20h9v83l-9 5Z"/>
+    <path d="M76 20h5v67a58 58 0 0 1-5 9Z"/>
+  </g>
+  <path d="M50 8 90 20v12H10V20Z" fill="#0d0d0f"/>
+  <text x="50" y="29" text-anchor="middle" fill="#fff" font-family="Arial Narrow, Arial, sans-serif"
+        font-size="10" font-weight="700" letter-spacing="0.3">GUARAPUAVA</text>
+  <circle cx="50" cy="62" r="17" fill="#fff"/>
+  <circle cx="50" cy="62" r="17" fill="none" stroke="#0d0d0f" stroke-width="2"/>
+  <path d="M50 51l7 5-3 8h-8l-3-8Z" fill="#0d0d0f"/>
+</svg>

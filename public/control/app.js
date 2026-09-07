@@ -362,6 +362,7 @@ function preencherAjustes(estado) {
   definir('#cfgCompeticao', estado.config.competicao || '');
   definir('#cfgLocal', estado.config.local || '');
   definir('#cfgAcento', estado.config.acento || '#17b64a');
+  definir('#cfgSkin', estado.config.skin || 'placar');
 
   for (const lado of ['casa', 'fora']) {
     definir(`#nome-${lado}`, estado.config[lado]?.nome || '');
@@ -374,12 +375,13 @@ function montarAjustes(estado) {
   if ($('#cartaoTimes').dataset.montado === 'sim') return;
   $('#cartaoTimes').dataset.montado = 'sim';
 
-  for (const campo of ['cfgCompeticao', 'cfgLocal', 'cfgAcento']) {
+  for (const campo of ['cfgCompeticao', 'cfgLocal', 'cfgAcento', 'cfgSkin']) {
     $(`#${campo}`).addEventListener('change', () => {
       DuStats.salvarConfig({
         competicao: $('#cfgCompeticao').value,
         local: $('#cfgLocal').value,
-        acento: $('#cfgAcento').value
+        acento: $('#cfgAcento').value,
+        skin: $('#cfgSkin').value
       });
     });
   }

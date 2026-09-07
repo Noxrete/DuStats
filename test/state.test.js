@@ -4,6 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const { Partida } = require('../server/state');
+const storage = require('../server/storage');
 const { esporte } = require('./helpers');
 
 function novaPartida() {
@@ -168,4 +169,19 @@ test('partida antiga ganha os campos de configuração criados depois', () => {
   assert.equal(p.config.casa.nome, 'A');
   assert.ok(p.config.casa.cor, 'a cor do time também é completada');
   assert.ok(p.config.fora.sigla, 'e a sigla');
+});
+
+/*
+ * A skin é a roupa das peças que entram no ar. Estes testes existem porque uma
+ * config sem skin, ou com skin de uma versão mais nova, não pode pôr no ar um
+ * painel sem estilo nenhum — o erro apareceria na transmissão, não aqui.
+ */
+test('partida salva antes das skins reabre com a aparência padrão', () => {
+  const antiga = { competicao: 'Amador', acento: '#17b64a' };   // sem `skin`
+  assert.equal(storage.comPadroes(antiga).skin, 'placar');
+  assert.equal(storage.comPadroes(antiga).acento, '#17b64a', 'e não perde o que já tinha');
+});
+
+test('config nova preserva a skin escolhida', () => {
+  assert.equal(storage.comPadroes({ skin: 'estadio' }).skin, 'estadio');
 });

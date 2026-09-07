@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>DuStats — Skins</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/shared/tema.css">
+<link rel="stylesheet" href="/shared/paineis.css">
+<link rel="stylesheet" href="/shared/faixa.css">
+<link rel="stylesheet" href="/shared/skins.css">
+<style>
+  /*
+   * Vitrine das skins, para escolher sem entrar no ar.
+   *
+   * Duas regras que fazem esta página valer alguma coisa:
+   *
+   *  1. Desenha as PEÇAS DE VERDADE — o mesmo paineis.js e o mesmo faixa.css
+   *     que vão para o OBS. Uma maquete separada mentiria assim que alguém
+   *     mexesse na peça real.
+   *  2. NÃO carrega bus.js. Sem WebSocket, sem estado real: a partida que
+   *     estiver salva na máquina não é lida nem tocada por esta página.
+   */
+  body {
+    background: #0a0d16;
+    color: #fff;
+    padding: 18px 20px 60px;
+    overflow: auto;
+    width: auto; height: auto;
+    cursor: auto;
+  }
+
+  header { display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; margin-bottom: 16px; }
+  h1 { font-size: 19px; letter-spacing: .16em; text-transform: uppercase; margin: 0; }
+  .dica { font-size: 13px; color: var(--texto-fraco); }
+
+  .controles { display: flex; gap: 8px; margin-left: auto; }
+  .controles button {
+    font-family: var(--fonte); font-size: 13px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase;
+    padding: 9px 16px; border-radius: 6px; cursor: pointer;
+    background: #1d2a5e; color: #fff; border: 1px solid #2c3d78;
+  }
+  .controles button[aria-pressed="true"] { background: var(--acento); color: #04220f; border-color: transparent; }
+
+  .grade { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+  /* Cada palco é um 1920 × 1080 de verdade, reduzido por transform. Reduzir por
+     escala e não por medidas menores é o que garante que o que aparece aqui é
+     exatamente o que o OBS vai compor. */
+  .moldura {
+    position: relative; overflow: hidden;
+    border: 1px solid #232c4a; border-radius: 8px;
+    background: #05070d;
+  }
+  .moldura > figcaption {
+    position: absolute; z-index: 5; left: 0; top: 0;
+    padding: 7px 14px;
+    background: rgba(5, 7, 13, .82);
+    font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    border-bottom-right-radius: 8px;
+  }
+  .moldura > figcaption b { color: var(--acento); font-weight: 700; }
+  .moldura > figcaption span { color: var(--texto-fraco); }
+
+  .palco {
+    position: relative;
+    width: 1920px; height: 1080px;
+    transform-origin: top left;
+  }
+
+  /* Fundos que imitam as duas condições reais: sol na grama e jogo à noite.
+     A skin Traço se decide no primeiro; a Estádio, no segundo. */
+  .palco .grama {
+    position: absolute; inset: 0;
+    background:
+      repeating-linear-gradient(90deg,
+        rgba(255, 255, 255, .05) 0 90px, rgba(0, 0, 0, .05) 90px 180px),
+      linear-gradient(170deg, #6fbf4a 0%, #4e9c33 45%, #2f6b22 100%);
+  }
+  body.noite .palco .grama {
+    background:
+      repeating-linear-gradient(90deg,
+        rgba(255, 255, 255, .03) 0 90px, rgba(0, 0, 0, .06) 90px 180px),
+      radial-gradient(60% 45% at 50% 20%, #2c5c33 0%, #16321c 60%, #0a1a0f 100%);
+  }
+
+  /* O retângulo do Placar PRO. Não é decoração: é a régua que diz se a skin
+     invadiu o canto onde mora o placar da transmissão. */
+  .placarpro {
+    position: absolute; left: 60px; top: 48px; z-index: 4;
+    width: 520px; height: 104px;
+    border-radius: 6px;
+    background: linear-gradient(180deg, #1d2a5e, #141d45);
+    border: 1px solid #2c3d78;
+    display: grid; place-items: center;
+    font-size: 15px; letter-spacing: .22em; text-transform: uppercase;
+    color: rgba(255, 255, 255, .45);
+    box-shadow: 0 10px 34px rgba(0, 0, 0, .6);
+  }
+
+  .palco .cena-painel { background: none; }   /* o escurecimento atrapalha a comparação */
+
+  /* Faixa e painel entram no ar em momentos diferentes — a faixa durante o
+     jogo, o painel no intervalo. Mostrar os dois juntos daria a impressão de
+     uma colisão que não acontece, então a vitrine alterna entre eles.
+     (Vale saber: se o operador subir o painel com a faixa no ar, eles SE
+     sobrepõem de verdade. Isso é assunto da peça, não da vitrine.) */
+  body:not(.mostrando-faixa) .palco .faixa { display: none; }
+  body.mostrando-faixa .palco .cena-painel { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Skins do DuStats</h1>
+  <span class="dica">As peças são as de verdade, com dados de exemplo. Nenhuma partida é lida ou alterada aqui.</span>
+  <div class="controles">
+    <button id="btPeca" aria-pressed="false">Ver a faixa</button>
+    <button id="btLuz" aria-pressed="false">Jogo à noite</button>
+    <button id="btRepetir">Repetir animação</button>
+  </div>
+</header>
+
+<div class="grade" id="grade"></div>
+
+<!-- Sem bus.js de propósito: esta página não fala com o servidor. O stub abaixo
+     é o suficiente para overlay.js e paineis.js se registrarem. -->
+<script>window.DuStats = {};</script>
+<script src="/shared/overlay.js"></script>
+<script src="/shared/campo.js"></script>
+<script src="/shared/paineis.js"></script>
+<script>
+'use strict';
+
+const SKINS = [
+  ['placar',   'Placar',   'a atual — casada com o overlay do Placar PRO'],
+  ['vidro',    'Vidro',    'material: lâmina translúcida que pousa'],
+  ['traco',    'Traço',    'ausência: só filetes e tipografia sobre o vídeo'],
+  ['bandeira', 'Bandeira', 'clube: o verde vira estrutura, não detalhe'],
+  ['estadio',  'Estádio',  'luz: quase preto com aresta de neon']
+];
+
+/*
+ * Confronto de exemplo. Charrua e Guarapuava são os escudos que o usuário
+ * mandou — e o par não é aleatório: o verde do Guarapuava é quase a cor de
+ * acento, o que expõe de propósito o ponto fraco da skin Bandeira, onde o
+ * acento é um campo verde atrás do escudo.
+ */
+const ESTADO = {
+  config: {
+    competicao: 'Campeonato Amador', local: 'Estádio Municipal',
+    acento: '#17b64a', skin: 'placar',
+    casa: { nome: 'Charrua', sigla: 'CHA', cor: '#c0161f', corTexto: '#fff', escudo: '/demo/charrua.svg' },
+    fora: { nome: 'Guarapuava', sigla: 'GUA', cor: '#1f8f3a', corTexto: '#fff', escudo: '/demo/guarapuava.svg' }
+  },
+  placar: { casa: 2, fora: 1 },
+  comparativo: [
+    { rotulo: 'Posse de bola', casa: 58, fora: 42, sufixo: '%', barra: true, destacar: true },
+    { rotulo: 'Finalizações', casa: 11, fora: 7, barra: true, destacar: true },
+    { rotulo: 'No gol', casa: 6, fora: 3, barra: true, destacar: true },
+    { rotulo: 'Precisão', casa: 55, fora: 43, sufixo: '%', barra: true, destacar: true },
+    { rotulo: 'Escanteios', casa: 5, fora: 2, barra: true, destacar: true },
+    { rotulo: 'Faltas', casa: 9, fora: 14, barra: true, destacar: false }
+  ]
+};
+
+/** A faixa do rodapé, montada com a mesma marcação de faixa.html. */
+function faixaDe(linha) {
+  const { overlay } = DuStats;
+  const total = linha.casa + linha.fora;
+  const fatia = total > 0 ? (linha.casa / total) * 100 : 50;
+  const sufixo = linha.sufixo || '';
+  return `
+    <div class="faixa no-ar">
+      <div class="conteudo-faixa">
+        <div class="rotulo-faixa"><span>${linha.rotulo}</span></div>
+        <div class="linha-faixa">
+          <span class="time-faixa casa" style="--cor: var(--cor-casa)"><i></i><span>${overlay.sigla(ESTADO.config, 'casa')}</span></span>
+          <span class="valor-faixa esq num">${linha.casa}${sufixo}</span>
+          <div class="trilho">
+            <span class="casa" style="width:${fatia}%"></span>
+            <span class="fora" style="width:${100 - fatia}%"></span>
+          </div>
+          <span class="valor-faixa dir num">${linha.fora}${sufixo}</span>
+          <span class="time-faixa fora" style="--cor: var(--cor-fora)"><i></i><span>${overlay.sigla(ESTADO.config, 'fora')}</span></span>
+        </div>
+      </div>
+    </div>`;
+}
+
+function montar() {
+  const grade = document.getElementById('grade');
+  grade.innerHTML = SKINS.map(([id, nome, nota]) => `
+    <figure class="moldura" data-moldura style="margin:0">
+      <figcaption><b>${nome}</b> &nbsp;<span>${nota}</span></figcaption>
+      <div class="palco" data-skin="${id}">
+        <div class="grama"></div>
+        <div class="placarpro">Placar PRO</div>
+        <div class="cena-painel no-ar">
+          <div class="painel-cheio">
+            <div data-cabecalho></div>
+            <div class="corpo"><div class="slide ativo" data-comparativo></div></div>
+            <div class="pontinhos"><i class="ativo"></i><i></i><i></i><i></i></div>
+          </div>
+        </div>
+        ${faixaDe(ESTADO.comparativo[0])}
+      </div>
+    </figure>`).join('');
+
+  for (const palco of grade.querySelectorAll('.palco')) {
+    palco.querySelector('[data-cabecalho]').innerHTML =
+      DuStats.paineis.cabecalho(ESTADO, 'Estatísticas do 1º tempo');
+    DuStats.paineis.comparativo(palco.querySelector('[data-comparativo]'), ESTADO);
+  }
+
+  // As cores do confronto vêm da config, como no ar — quem escreve normalmente
+  // é o bus.js, que esta página não carrega.
+  const raiz = document.documentElement.style;
+  raiz.setProperty('--cor-casa', ESTADO.config.casa.cor);
+  raiz.setProperty('--cor-fora', ESTADO.config.fora.cor);
+  raiz.setProperty('--acento', ESTADO.config.acento);
+
+  ajustarEscala();
+}
+
+/** O palco é 1920 × 1080 e cabe na coluna por escala, nunca por medida menor. */
+function ajustarEscala() {
+  for (const moldura of document.querySelectorAll('[data-moldura]')) {
+    const palco = moldura.querySelector('.palco');
+    const z = moldura.clientWidth / 1920;
+    palco.style.transform = `scale(${z})`;
+    moldura.style.height = `${1080 * z}px`;
+  }
+}
+window.addEventListener('resize', ajustarEscala);
+
+document.getElementById('btPeca').addEventListener('click', (e) => {
+  const faixa = document.body.classList.toggle('mostrando-faixa');
+  e.currentTarget.setAttribute('aria-pressed', String(faixa));
+  e.currentTarget.textContent = faixa ? 'Ver o painel' : 'Ver a faixa';
+});
+
+document.getElementById('btLuz').addEventListener('click', (e) => {
+  const noite = document.body.classList.toggle('noite');
+  e.currentTarget.setAttribute('aria-pressed', String(noite));
+  e.currentTarget.textContent = noite ? 'Jogo de dia' : 'Jogo à noite';
+});
+
+document.getElementById('btRepetir').addEventListener('click', () => {
+  // Tirar e repor `no-ar` refaz a entrada — animação se julga em movimento.
+  const peças = document.querySelectorAll('.cena-painel, .faixa');
+  for (const p of peças) p.classList.remove('no-ar');
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    for (const p of peças) p.classList.add('no-ar');
+    for (const palco of document.querySelectorAll('.palco')) {
+      DuStats.paineis.comparativo(palco.querySelector('[data-comparativo]'), ESTADO);
+    }
+  }));
+});
+
+montar();
+</script>
+</body>
+</html>

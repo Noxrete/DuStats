@@ -156,6 +156,12 @@
     // A cor da transmissão (o verde do Marrentão) é do canal, não da partida:
     // ela não muda quando os times mudam.
     const acento = e.config?.acento || '#17b64a';
+    // Skin desconhecida cai no padrão em vez de deixar a peça sem estilo: uma
+    // config vinda de uma versão mais nova não pode pôr no ar um painel cru.
+    const SKINS = ['placar', 'vidro', 'traco', 'bandeira', 'estadio'];
+    const skin = e.config?.skin;
+    document.documentElement.dataset.skin = SKINS.includes(skin) ? skin : 'placar';
+
     raiz.setProperty('--acento', acento);
     raiz.setProperty('--acento-escuro', escurecer(acento));
   }

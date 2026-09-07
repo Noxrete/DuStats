@@ -89,6 +89,10 @@ const CONFIG_FABRICA = {
   rodada: '',
   local: '',
   acento: '#17b64a',
+  // Aparência das peças que entram no ar. Vive na config da partida, e não numa
+  // preferência global, porque a roupa certa depende do jogo: sol na grama pede
+  // contraste, jogo à noite pede outra coisa.
+  skin: 'placar',
   casa: { nome: 'Time da Casa', sigla: 'CAS', cor: '#1f6feb', corTexto: '#ffffff', escudo: '' },
   fora: { nome: 'Time Visitante', sigla: 'VIS', cor: '#d92d20', corTexto: '#ffffff', escudo: '' }
 };
