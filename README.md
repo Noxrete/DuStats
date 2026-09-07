@@ -47,52 +47,42 @@ depois do jogo.
 
 ## Instalar
 
-**Não tem instalação.** O DuStats não usa nenhuma biblioteca de terceiros —
-nada de `npm install`, nada para baixar antes de rodar. A pasta do projeto já é
-o programa.
+**Não instala.** O DuStats é um arquivo só: `DuStats.exe`.
 
-Você só precisa de um `node` para executá-la, e há dois caminhos:
+Copie para o PC do OBS — de preferência para uma pasta sua, como Documentos ou
+a Área de Trabalho — e dê **duplo clique**. O painel abre sozinho no navegador
+e o programa cria uma pasta `data` ao lado, onde ficam as partidas.
 
-### Caminho A — pasta portátil (não instala nada)
+Nada de Node.js, nada de `npm install`, nada de arquivo `.bat`. Para levar a
+outro computador, copie o `.exe` (leve a pasta `data` junto se quiser o
+histórico).
 
-Num computador que já tenha [Node.js](https://nodejs.org):
+> **Na primeira vez o Windows vai avisar** — "O Windows protegeu o seu PC".
+> Acontece com qualquer programa sem assinatura digital paga. Clique em
+> **Mais informações** → **Executar assim mesmo**. Se o antivírus reclamar,
+> libere o arquivo: executáveis feitos assim costumam dar alarme falso.
+
+### Gerar o executável
+
+O `.exe` não fica no repositório (tem 83 MB). Para gerar, num computador com
+[Node.js](https://nodejs.org):
 
 ```bash
-npm run portatil
+npm run exe          # gera build/DuStats.exe para Windows
 ```
 
-Isso monta a pasta `DuStats-portatil/` com o Node dentro (~85 MB, ~35 MB
-zipada). Copie a pasta inteira para o PC do OBS ou para um pendrive e dê
-**duplo clique no `DuStats.bat`**. Não precisa instalar nada na máquina de
-destino, e o histórico de partidas viaja junto na pasta.
+O comando baixa o Node oficial para Windows, empacota o DuStats inteiro dentro
+dele e devolve um arquivo único. A ferramenta de injeção (`postject`) é
+instalada sozinha na primeira vez — ela é só de construção e não entra no
+executável.
 
-### Caminho B — Node instalado no PC
-
-Instale o [Node.js LTS](https://nodejs.org) uma vez e dê **duplo clique no
-`DuStats.bat`** (no Linux ou Mac, `./dustats.sh`).
-
-Nos dois caminhos o painel abre sozinho no navegador.
-
-## Rodar
-
-Duplo clique no `DuStats.bat`, ou pelo terminal:
+### Rodando pelo código, para desenvolver
 
 ```bash
 npm start
 ```
 
 O terminal imprime os endereços, já com o IP da sua rede:
-
-```
-  PAINEL DO APONTADOR (abra no celular, na mesma rede):
-     http://192.168.0.12:4400/control/
-
-  OVERLAYS — adicione como Fonte de Navegador no OBS, 1920x1080:
-     faixa     http://192.168.0.12:4400/overlay/faixa.html   (rodapé, sob demanda)
-     intervalo http://192.168.0.12:4400/overlay/intervalo.html   (tela cheia)
-```
-
-Deixe essa janela aberta durante todo o jogo.
 
 ## Montar no OBS (uma vez só)
 
@@ -258,7 +248,14 @@ primeira vez que você abre o DuStats, o Windows pergunta isso numa janela —
 marque **redes privadas** e permita.
 
 **"A porta 4400 já está em uso".** O DuStats já está aberto em outra janela.
-Feche a antiga, ou rode em outra porta: `set PORT=4401 && npm start`.
+Feche a antiga, ou abra em outra porta: `set PORT=4401 && DuStats.exe`.
+
+**A janela abriu e fechou sozinha.** Não fecha mais: qualquer erro grave agora
+segura a janela aberta com a mensagem até você apertar uma tecla. Se acontecer,
+me mande o que estiver escrito.
+
+**"Não consigo gravar em ... data".** O `.exe` está numa pasta protegida, como
+Arquivos de Programas. Mova para Documentos ou para a Área de Trabalho.
 
 **O overlay ficou preto no OBS.** Está tudo certo: os dois só desenham quando
 têm o que mostrar. O `intervalo.html` fica vazio fora do modo Intervalo, e a
@@ -322,6 +319,13 @@ dela a cada leitura (`server/stats.js`). É isso que faz o **desfazer** custar
 uma linha, o reinício do servidor ser exato e a visão computacional caber
 depois sem reescrever nada.
 
+**Um arquivo só.** O executável é o Node oficial com o DuStats injetado dentro
+(recurso de *single executable application* do próprio Node). Os módulos do
+servidor viram um `.js` só e `public/` e `config/` entram embutidos como texto;
+`server/recursos.js` é o único lugar que sabe se está lendo do disco ou de
+dentro do binário. Os dados da partida nunca são embutidos — precisam ser
+graváveis e sobreviver a uma troca de versão, então ficam ao lado do `.exe`.
+
 **Zero dependências.** Não só no navegador: o servidor também. HTTP e
 WebSocket são escritos em cima dos módulos do próprio Node (`server/http.js` e
 `server/ws.js`, ~250 linhas somadas). O que tornou isso viável foi o canal ser
@@ -340,9 +344,11 @@ mostrar 58% de posse e o painel do intervalo mostrar 57%.
 
 ```
 server/       clock.js (tempo)  stats.js (derivação)  state.js (partida)
-              storage.js (disco)  export.js (CSV)
+              storage.js (disco)  export.js (CSV)  recursos.js (disco ou embutido)
               http.js + ws.js (transporte)  index.js (rotas e subida)
 public/       shared/ (bus, campo, painéis, cartão)  control/  overlay/
 config/       futebol.json (regras do esporte)  partida.json (times)
-ferramentas/  montar-portatil.mjs (empacota com o Node dentro)
+ferramentas/  empacotar.mjs (junta tudo num .js)  montar-exe.mjs (gera o .exe)
+              zip.mjs (lê o pacote oficial do Node)
+build/        saída da construção, fora do repositório
 ```

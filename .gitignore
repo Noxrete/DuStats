@@ -1,4 +1,5 @@
 node_modules/
+build/
 DuStats-portatil/
 node/
 data/matches/

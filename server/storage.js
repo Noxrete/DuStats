@@ -2,12 +2,11 @@
 
 const fs = require('fs');
 const path = require('path');
+const recursos = require('./recursos');
 
-const RAIZ = path.join(__dirname, '..');
-const DIR_DADOS = path.join(RAIZ, 'data');
+const DIR_DADOS = path.join(recursos.raizDeDados(), 'data');
 const DIR_PARTIDAS = path.join(DIR_DADOS, 'matches');
 const PONTEIRO = path.join(DIR_DADOS, 'atual.txt');
-const DIR_CONFIG = path.join(RAIZ, 'config');
 
 function garantirPastas() {
   fs.mkdirSync(DIR_PARTIDAS, { recursive: true });
@@ -72,7 +71,7 @@ function listarPartidas() {
 }
 
 function carregarEsporte(id = 'futebol') {
-  const esporte = lerJson(path.join(DIR_CONFIG, `${id}.json`));
+  const esporte = recursos.config(id);
   if (!esporte) throw new Error(`Configuração do esporte "${id}" não encontrada em config/`);
   return esporte;
 }
@@ -104,11 +103,13 @@ function comPadroes(config) {
 }
 
 function carregarConfigPadrao() {
-  return comPadroes(lerJson(path.join(DIR_CONFIG, 'partida.json'), {}));
+  return comPadroes(recursos.config('partida') || {});
 }
 
 function salvarConfigPadrao(config) {
-  gravarJson(path.join(DIR_CONFIG, 'partida.json'), config);
+  const destino = recursos.caminhoDeConfig('partida');
+  fs.mkdirSync(path.dirname(destino), { recursive: true });
+  gravarJson(destino, config);
 }
 
 module.exports = {

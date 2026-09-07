@@ -13,6 +13,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const recursos = require('./recursos');
 
 const LIMITE_CORPO = 8 * 1024 * 1024; // escudos chegam em base64
 
@@ -103,8 +104,14 @@ function compilar(padrao) {
   };
 }
 
-function criarApp({ estatico }) {
-  const raizEstatica = path.resolve(estatico);
+/**
+ * `estaticos` é uma lista de pastas, tentadas em ordem. São duas porque os
+ * escudos enviados pelo painel precisam de um lugar gravável: dentro do
+ * executável nada pode ser escrito, então eles vão para a pasta de dados, ao
+ * lado do .exe, e continuam sendo servidos como se fossem parte do site.
+ */
+function criarApp({ estaticos }) {
+  const raizes = estaticos.map((dir) => path.resolve(dir));
   const rotas = [];
 
   const registrar = (metodo) => (padrao, ...manipuladores) => {
@@ -132,16 +139,38 @@ function criarApp({ estatico }) {
     return res;
   }
 
-  function servirArquivo(res, arquivo) {
-    const extensao = path.extname(arquivo).toLowerCase();
+  function cabecalhosDeArquivo(res, nome) {
+    const extensao = path.extname(nome).toLowerCase();
     res.setHeader('Content-Type', TIPOS[extensao] || 'application/octet-stream');
     // Os overlays são recarregados pelo OBS sem aviso; nada aqui pode ficar
     // preso em cache, ou uma correção de última hora não entra no ar.
     res.setHeader('Cache-Control', 'no-cache');
+  }
 
+  function servirArquivo(res, arquivo) {
+    cabecalhosDeArquivo(res, arquivo);
     const fluxo = fs.createReadStream(arquivo);
     fluxo.on('error', () => { res.statusCode = 500; res.end('erro ao ler arquivo'); });
     fluxo.pipe(res);
+  }
+
+  /** Procura o arquivo no disco, na ordem das pastas configuradas. */
+  function acharNoDisco(caminho) {
+    for (const raiz of raizes) {
+      const alvo = resolverEstatico(raiz, caminho);
+      if (!alvo) continue;
+      try {
+        const info = fs.statSync(alvo);
+        if (info.isFile()) return alvo;
+        if (info.isDirectory()) {
+          const indice = path.join(alvo, 'index.html');
+          if (fs.existsSync(indice)) return indice;
+        }
+      } catch {
+        /* não existe nesta pasta: tenta a próxima */
+      }
+    }
+    return null;
   }
 
   async function manipular(req, res) {
@@ -177,17 +206,23 @@ function criarApp({ estatico }) {
     // Nenhuma rota casou: tenta arquivo estático.
     if (req.method !== 'GET') return res.status(404).json({ erro: 'rota não encontrada' });
 
-    const arquivo = resolverEstatico(raizEstatica, caminho);
-    if (!arquivo) return res.status(403).send('caminho inválido');
+    // A checagem de escape roda antes de tudo, inclusive antes do embutido:
+    // um caminho que sai da raiz é recusado, venha de onde vier.
+    if (raizes.every((raiz) => resolverEstatico(raiz, caminho) === null)) {
+      return res.status(403).send('caminho inválido');
+    }
 
-    fs.stat(arquivo, (erro, info) => {
-      if (erro) return res.status(404).send('não encontrado');
-      if (info.isDirectory()) {
-        const indice = path.join(arquivo, 'index.html');
-        return fs.stat(indice, (e) => (e ? res.status(404).send('não encontrado') : servirArquivo(res, indice)));
-      }
-      return servirArquivo(res, arquivo);
-    });
+    const dentroDoExecutavel = recursos.estatico(
+      caminho.endsWith('/') ? `${caminho}index.html` : caminho
+    );
+    if (dentroDoExecutavel) {
+      cabecalhosDeArquivo(res, caminho.endsWith('/') ? 'index.html' : caminho);
+      return res.end(dentroDoExecutavel);
+    }
+
+    const arquivo = acharNoDisco(caminho);
+    if (!arquivo) return res.status(404).send('não encontrado');
+    servirArquivo(res, arquivo);
     return undefined;
   }
 

@@ -7,6 +7,7 @@ const path = require('path');
 
 const { criarApp } = require('./http');
 const ws = require('./ws');
+const recursos = require('./recursos');
 const storage = require('./storage');
 const { Partida } = require('./state');
 const exportar = require('./export');
@@ -14,13 +15,78 @@ const exportar = require('./export');
 const PORTA = Number(process.env.PORT) || 4400;
 const TOKEN = process.env.DUSTATS_TOKEN || '';
 const RAIZ = path.join(__dirname, '..');
-const DIR_LOGOS = path.join(RAIZ, 'public', 'logos');
+// Os escudos são gravados, então vão para a pasta de dados. Rodando solto do
+// projeto isso é a própria public/logos; dentro do executável, ao lado do .exe.
+const DIR_LOGOS = path.join(recursos.raizDeDados(), 'public', 'logos');
+
+// Renomeia a janela do Windows de "node.exe" ou do caminho completo para algo
+// que o operador reconheça na barra de tarefas no meio da transmissão.
+process.title = 'DuStats';
+
+/**
+ * Encerra deixando a mensagem na tela.
+ *
+ * Num .exe aberto com duplo clique no Windows, `process.exit` fecha a janela no
+ * mesmo instante: o operador veria um piscar e nada mais, justo quando algo deu
+ * errado. Então esperamos uma tecla antes de sair.
+ */
+function encerrarComAviso(linhas, codigo = 1) {
+  for (const linha of linhas) console.error(linha);
+
+  if (!process.stdin.isTTY) process.exit(codigo);
+
+  console.error('\n  Pressione qualquer tecla para fechar.');
+  process.stdin.setRawMode(true);
+  process.stdin.resume();
+  process.stdin.once('data', () => process.exit(codigo));
+}
+
+// Uma falha inesperada também não pode sumir com a janela sem deixar rastro:
+// sem isto, o operador só saberia dizer "abri e fechou sozinho".
+process.on('uncaughtException', (erro) => {
+  encerrarComAviso([
+    '',
+    '  O DuStats parou por um erro inesperado.',
+    `  ${erro && erro.stack ? erro.stack : erro}`,
+    '',
+    '  Anote a mensagem acima antes de fechar.'
+  ]);
+});
+
+/**
+ * A pasta de dados precisa ser gravável, e isso tem que falhar ALTO agora.
+ *
+ * Se o .exe for parar em Arquivos de Programas, ou num pendrive protegido, o
+ * jogo rodaria a partida inteira sem salvar nada — e o erro só apareceria
+ * quando não houvesse mais o que fazer.
+ */
+function conferirEscrita() {
+  const dir = path.join(recursos.raizDeDados(), 'data');
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    const teste = path.join(dir, '.escrita');
+    fs.writeFileSync(teste, 'ok');
+    fs.unlinkSync(teste);
+  } catch (erro) {
+    encerrarComAviso([
+      '',
+      `  ATENCAO: nao consigo gravar em ${dir}`,
+      `  Motivo: ${erro.message}`,
+      '',
+      '  A partida NAO seria salva. Mova o DuStats para uma pasta sua',
+      '  (Documentos ou Area de Trabalho) e abra de novo.'
+    ]);
+  }
+}
+conferirEscrita();
 
 const esporte = storage.carregarEsporte(process.env.DUSTATS_ESPORTE || 'futebol');
 let partida = Partida.carregar(esporte);
 storage.salvar(partida.paraDisco());
 
-const app = criarApp({ estatico: path.join(RAIZ, 'public') });
+const app = criarApp({
+  estaticos: [path.join(recursos.raizDeDados(), 'public'), path.join(RAIZ, 'public')]
+});
 app.get('/', (_req, res) => res.redirect('/control/'));
 app.get('/favicon.ico', (_req, res) => res.status(204).end());
 
@@ -247,8 +313,11 @@ servidor.listen(PORTA, () => {
 // Porta ocupada é o erro mais comum na segunda vez que se clica no atalho.
 servidor.on('error', (erro) => {
   if (erro.code !== 'EADDRINUSE') throw erro;
-  console.error(`\n  A porta ${PORTA} já está em uso.`);
-  console.error('  O DuStats provavelmente já está aberto numa outra janela.');
-  console.error(`  Se não estiver, rode com outra porta:  set PORT=4401 && npm start\n`);
-  process.exit(1);
+  encerrarComAviso([
+    '',
+    `  A porta ${PORTA} ja esta em uso.`,
+    '  O DuStats provavelmente ja esta aberto numa outra janela.',
+    '',
+    `  Se nao estiver, abra com outra porta:  set PORT=4401 && DuStats.exe`
+  ]);
 });

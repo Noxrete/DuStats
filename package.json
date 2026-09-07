@@ -9,9 +9,13 @@
     "start": "node server/index.js",
     "simular": "node server/simulate.js",
     "test": "node --test test/*.test.js",
-    "portatil": "node ferramentas/montar-portatil.mjs"
+    "exe": "node ferramentas/montar-exe.mjs",
+    "empacotar": "node ferramentas/empacotar.mjs"
   },
   "engines": {
     "node": ">=18"
+  },
+  "devDependencies": {
+    "postject": "^1.0.0-alpha.6"
   }
 }
