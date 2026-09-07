@@ -33,6 +33,8 @@ const BASE = `http://127.0.0.1:${PORTA}`;
 const CAMINHOS = [
   '/control/',
   '/control/app.js',
+  '/control/posse.html',
+  '/shared/qr.js',
   '/shared/tema.css',
   '/shared/bus.js',
   '/overlay/faixa.html',

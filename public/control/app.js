@@ -562,6 +562,9 @@ function desenharConferencia(estado) {
   // O endereço vem do servidor, não do location: quem abre o painel no PC do
   // OBS abre em localhost, e um QR de localhost manda o celular para si mesmo.
   const url = estado.rede?.url || null;
+  // O endereço da tela de posse acompanha o mesmo raciocínio: quem lê isso vai
+  // digitar no OUTRO celular, e localhost não serve para ninguém além deste.
+  $('#urlPosse').textContent = url ? `${url}posse.html` : '';
   $('#blocoQr').hidden = !url;
   if (url && url !== qrDesenhado) {
     const desenho = DuStats.qr?.svg(url, { tamanho: 132, claro: '#ffffff', escuro: '#0b1020' });

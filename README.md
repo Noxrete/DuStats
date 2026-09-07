@@ -292,6 +292,21 @@ No mesmo cartão sai um QR com o endereço do painel. O endereço vem do servido
 não do navegador: quem abre no PC do OBS abre em `localhost`, e um QR de
 `localhost` manda o celular para o próprio celular.
 
+## Dois apontadores
+
+Posse de bola é uma batida a cada troca de bola — mais que todos os outros
+lances somados. Fazer isso e registrar finalização, escanteio e falta ao mesmo
+tempo, olhando o jogo, é onde a marcação começa a falhar.
+
+`/control/posse.html`, num segundo celular, faz só posse: dois botões do
+tamanho da tela e um de bola parada. Quem está no painel completo cuida dos
+lances e pode esquecer a posse. Os dois gravam no mesmo servidor — isso já
+funcionava desde sempre, porque o estado vive no servidor e não no aparelho;
+faltava uma tela que assumisse esse arranjo.
+
+O link sai na aba **Ajustes**, já com o endereço da rede pronto para digitar no
+outro aparelho.
+
 ## Configuração
 
 | Variável | Padrão | Para quê |

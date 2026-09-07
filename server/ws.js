@@ -80,7 +80,7 @@ function opcodesRecebidos(pedaco) {
  * nome chega por query string, portanto vem de qualquer um na mesma rede, e vai
  * parar no snapshot que o painel desenha. Nome fora da lista vira "outra".
  */
-const FONTES = new Set(['painel', 'faixa', 'intervalo', 'resumo']);
+const FONTES = new Set(['painel', 'posse', 'faixa', 'intervalo', 'resumo']);
 
 function fonteDoPedido(url) {
   const busca = String(url || '').split('?')[1] || '';

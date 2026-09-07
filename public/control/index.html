@@ -127,6 +127,18 @@
   .checagens .falta .nome { color: #ffd9cf; }
   .checagens .alerta .marca { color: #ffcc55; }
 
+  .explica { margin: 0 0 12px; font-size: 14px; color: var(--texto-fraco); line-height: 1.45; }
+  .botao-link {
+    display: block; text-align: center; text-decoration: none;
+    padding: 14px; border-radius: 10px;
+    background: var(--navy-claro); border: 1px solid var(--navy-borda);
+    color: #fff; font-weight: 700; font-size: 15px;
+  }
+  .endereco {
+    display: block; margin-top: 8px; font-size: 12px;
+    color: var(--texto-fraco); word-break: break-all; text-align: center;
+  }
+
   .qr { display: flex; align-items: center; gap: 16px; margin-top: 14px; }
   .qr-desenho { flex: 0 0 auto; line-height: 0; border-radius: 6px; overflow: hidden; }
   .qr-texto { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
@@ -433,6 +445,19 @@
           <code id="qrUrl"></code>
         </div>
       </div>
+    </div>
+
+    <div class="cartao">
+      <h3>Dois apontadores</h3>
+      <p class="explica">
+        Posse de bola é uma batida a cada troca — mais que todos os outros
+        lances somados. Num segundo celular, esta tela faz só isso, com botões
+        do tamanho da tela, e quem está aqui cuida dos lances.
+      </p>
+      <a class="botao-link" id="linkPosse" href="/control/posse.html" target="_blank" rel="noopener">
+        Abrir a tela de posse
+      </a>
+      <code class="endereco" id="urlPosse"></code>
     </div>
 
     <div class="cartao">

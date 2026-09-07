@@ -83,6 +83,11 @@
    * servidor de 170 linhas sem biblioteca.
    */
   function nomeDaFonte() {
+    // A tela de posse conta separado do painel: a conferência avisa quando há
+    // dois PAINÉIS abertos, porque aí o mesmo gol entra duas vezes. Dois
+    // aparelhos com a tela de posse não é erro nenhum — é o arranjo de dois
+    // apontadores, que é justamente para o que ela existe.
+    if (location.pathname.endsWith('/posse.html')) return 'posse';
     if (location.pathname.startsWith('/control')) return 'painel';
     const casado = location.pathname.match(/\/overlay\/([a-z]+)\.html$/);
     return casado ? casado[1] : 'outra';
