@@ -8,12 +8,13 @@
   "scripts": {
     "start": "node server/index.js",
     "simular": "node server/simulate.js",
-    "test": "node --test test/*.test.js",
+    "test": "node --test",
     "exe": "node ferramentas/montar-exe.mjs",
-    "empacotar": "node ferramentas/empacotar.mjs"
+    "empacotar": "node ferramentas/empacotar.mjs",
+    "fumaca": "node ferramentas/fumaca.mjs"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "devDependencies": {
     "postject": "^1.0.0-alpha.6"

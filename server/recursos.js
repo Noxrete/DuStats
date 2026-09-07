@@ -43,6 +43,9 @@ const RAIZ_PROJETO = path.join(__dirname, '..');
  * apareceria vazio.
  */
 function raizDeDados() {
+  // Escape para quem precisa isolar: o teste de fumaça, a CI, ou rodar duas
+  // instâncias na mesma máquina sem uma pisar na partida da outra.
+  if (process.env.DUSTATS_DADOS) return path.resolve(process.env.DUSTATS_DADOS);
   // No executável, a pasta que contém o .exe. Se fosse a pasta de trabalho,
   // abrir o DuStats por um atalho gravaria o jogo noutro lugar e o histórico
   // apareceria vazio.

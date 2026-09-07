@@ -1,5 +1,7 @@
 # DuStats
 
+[![Testes](https://github.com/Noxrete/DuStats/actions/workflows/testes.yml/badge.svg)](https://github.com/Noxrete/DuStats/actions/workflows/testes.yml)
+
 Estatísticas ao vivo de futebol amador para transmissão no OBS.
 
 Você aponta os lances num celular e as estatísticas entram no ar sozinhas —
@@ -216,8 +218,27 @@ do intervalo aparece com 45 minutos de estatísticas na hora — dá para ajusta
 os overlays em segundos em vez de esperar um jogo.
 
 ```bash
-npm test                       # testes do relógio, das estatísticas, do estado e do transporte
+npm test                       # testes do relógio, estatísticas, estado e transporte
+npm run fumaca                 # sobe o servidor de verdade e confere as rotas
 ```
+
+## Integração contínua
+
+A cada push e pull request, o GitHub Actions roda:
+
+- **os testes unitários em Linux e Windows**, no Node 20 e 22. O Windows está
+  aí porque é onde o DuStats roda de verdade — e porque o único furo de
+  segurança que apareceu neste projeto (barra invertida escapando da pasta
+  pública) **só existia lá**. Testar só no Linux daria falso verde.
+- **o teste de fumaça**, que sobe o servidor e bate nas rotas de verdade. Os
+  testes unitários não abrem socket nenhum; este pega rota que sumiu, arquivo
+  estático que ficou de fora do empacotamento e servidor que nem sobe.
+- **o empacotamento**, conferindo que o `.js` único sobe sozinho numa pasta
+  vazia — que é como ele roda dentro do executável.
+- **um guarda contra dependências**: se um `dependencies` ou um `require` de
+  pacote externo entrar no servidor, a CI falha. A promessa de "copia e roda,
+  sem instalar nada" se perderia em silêncio, porque na máquina de quem
+  desenvolve o `node_modules` já está lá.
 
 ## Configuração
 
@@ -226,6 +247,8 @@ npm test                       # testes do relógio, das estatísticas, do estad
 | `PORT` | `4400` | Porta do servidor |
 | `DUSTATS_TOKEN` | vazio | Se definida, exige o cabeçalho `x-dustats-token` para gravar |
 | `DUSTATS_ESPORTE` | `futebol` | Nome do arquivo em `config/` |
+| `DUSTATS_DADOS` | ao lado do `.exe` | Onde gravar partidas e configuração |
+| `DUSTATS_ABRIR` | vazio | `1` abre o painel no navegador ao subir |
 
 `config/futebol.json` define os períodos e os tipos de lance. `config/partida.json`
 guarda os times (o painel escreve nele sozinho).
