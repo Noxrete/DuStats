@@ -1,0 +1,58 @@
+name: Publicar o DuStats.exe
+
+# Existe por um motivo prático: o artefato da aba Actions só é clicável para
+# quem está logado no GitHub, e o download vem como .zip que ainda precisa ser
+# extraído. Numa Release o arquivo é direto, sem login, e abre até no celular:
+#
+#   https://github.com/Noxrete/DuStats/releases/latest/download/DuStats.exe
+#
+# Para publicar uma versão nova:  git tag v0.2.0 && git push origin v0.2.0
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+# Sem isto o `gh release create` responde 403: o token padrão só tem leitura.
+permissions:
+  contents: write
+
+jobs:
+  publicar:
+    name: Montar e publicar
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # As mesmas checagens do fluxo de testes, antes de publicar. Uma Release
+      # é pública e fica no ar: não pode sair com o servidor quebrado.
+      - name: Testes
+        run: npm test
+
+      - name: Fumaça
+        run: npm run fumaca
+
+      - name: Montar o executável
+        run: npm run exe
+
+      - name: Publicar a versão
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          # Disparo manual não tem tag; aí a versão vira a data, para dar para
+          # gerar um executável novo sem precisar marcar uma versão.
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            VERSAO="$GITHUB_REF_NAME"
+          else
+            VERSAO="build-$(date -u +%Y%m%d-%H%M)"
+          fi
+
+          gh release create "$VERSAO" build/DuStats.exe \
+            --title "DuStats $VERSAO" \
+            --notes-file .github/notas-release.md \
+            --target "$GITHUB_SHA"

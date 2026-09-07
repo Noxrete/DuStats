@@ -66,13 +66,31 @@ histórico).
 
 ### Onde baixar o executável
 
-O `.exe` não fica no repositório (tem 83 MB) — a CI monta a cada push na `main`
-e publica para download:
+O `.exe` não fica no repositório (tem 83 MB). Baixe da página de versões:
 
-1. Abra a [aba Actions](https://github.com/Noxrete/DuStats/actions/workflows/testes.yml)
-2. Clique na execução mais recente que estiver verde
-3. Role até **Artifacts** e baixe **DuStats-Windows**
-4. Descompacte o `.zip` — dentro está o `DuStats.exe`
+**→ [github.com/Noxrete/DuStats/releases/latest](https://github.com/Noxrete/DuStats/releases/latest)**
+
+Em **Assets**, clique em `DuStats.exe`. Vem o arquivo direto, sem `.zip` para
+extrair, e funciona deslogado e no celular.
+
+Link fixo, se quiser guardar nos favoritos:
+
+```
+https://github.com/Noxrete/DuStats/releases/latest/download/DuStats.exe
+```
+
+> **Por que não pegar da aba Actions.** A CI também guarda o executável em
+> *Artifacts*, mas o GitHub só deixa **quem está logado** baixar de lá — para
+> visitante deslogado o nome aparece na lista e não é clicável, sem nenhuma
+> mensagem explicando. E o que vem é um `.zip` com o `.exe` dentro. O artefato
+> continua servindo para conferir uma pull request antes de mesclar; para usar
+> no jogo, use a Release.
+
+Para publicar uma versão nova, marque a versão — o resto é automático:
+
+```bash
+git tag v0.2.0 && git push origin v0.2.0
+```
 
 Se preferir gerar na sua máquina, com [Node.js](https://nodejs.org) instalado:
 
@@ -246,6 +264,12 @@ A cada push e pull request, o GitHub Actions roda:
   pacote externo entrar no servidor, a CI falha. A promessa de "copia e roda,
   sem instalar nada" se perderia em silêncio, porque na máquina de quem
   desenvolve o `node_modules` já está lá.
+- **a montagem do `DuStats.exe`**, que fica anexada à execução em *Artifacts*.
+  Roda em pull request também: sem isso, a única forma de pegar o executável
+  para testar seria mesclar antes de saber se funciona.
+
+E, quando uma tag `v*` é empurrada, o fluxo `publicar.yml` roda os testes de
+novo, monta o executável e cria a Release com o `.exe` anexado.
 
 ## Configuração
 
