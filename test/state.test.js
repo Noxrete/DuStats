@@ -155,3 +155,17 @@ test('desfazer não mexe no ajuste de relógio — ele se corrige sozinho', () =
   p.adicionar({ type: 'relogio', meta: { acao: 'ajustar', paraMs: 32 * 60_000 } });
   assert.ok(p.derivar().relogio.tPeriodo >= 32 * 60_000);
 });
+
+test('partida antiga ganha os campos de configuração criados depois', () => {
+  // Um jogo salvo antes de a cor da transmissão existir traz a config antiga
+  // inteira. Sem completar com os valores de fábrica, o campo sumiria do disco
+  // no primeiro salvamento — que foi exatamente o que aconteceu uma vez.
+  const antiga = { competicao: 'Amadorzão', casa: { nome: 'A' }, fora: { nome: 'B' } };
+  const p = new Partida({ esporte, config: antiga });
+
+  assert.ok(p.config.acento, 'a cor da transmissão tem que voltar');
+  assert.equal(p.config.competicao, 'Amadorzão', 'sem sobrescrever o que já existia');
+  assert.equal(p.config.casa.nome, 'A');
+  assert.ok(p.config.casa.cor, 'a cor do time também é completada');
+  assert.ok(p.config.fora.sigla, 'e a sigla');
+});

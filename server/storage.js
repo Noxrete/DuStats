@@ -77,8 +77,34 @@ function carregarEsporte(id = 'futebol') {
   return esporte;
 }
 
+/**
+ * Valores de fábrica da configuração de partida.
+ *
+ * Ficam em código, e não só no JSON, porque uma partida salva antes de um campo
+ * existir traz a configuração antiga inteira. Sem esta base, cada campo novo
+ * desapareceria silenciosamente ao reabrir um jogo antigo — foi assim que a
+ * cor da transmissão sumiu na primeira vez.
+ */
+const CONFIG_FABRICA = {
+  competicao: 'Campeonato Amador',
+  rodada: '',
+  local: '',
+  acento: '#17b64a',
+  casa: { nome: 'Time da Casa', sigla: 'CAS', cor: '#1f6feb', corTexto: '#ffffff', escudo: '' },
+  fora: { nome: 'Time Visitante', sigla: 'VIS', cor: '#d92d20', corTexto: '#ffffff', escudo: '' }
+};
+
+/** Completa o que faltar na configuração com os valores de fábrica. */
+function comPadroes(config) {
+  const base = { ...CONFIG_FABRICA, ...(config || {}) };
+  for (const lado of ['casa', 'fora']) {
+    base[lado] = { ...CONFIG_FABRICA[lado], ...(config?.[lado] || {}) };
+  }
+  return base;
+}
+
 function carregarConfigPadrao() {
-  return lerJson(path.join(DIR_CONFIG, 'partida.json'), {});
+  return comPadroes(lerJson(path.join(DIR_CONFIG, 'partida.json'), {}));
 }
 
 function salvarConfigPadrao(config) {
@@ -95,5 +121,7 @@ module.exports = {
   carregarEsporte,
   carregarConfigPadrao,
   salvarConfigPadrao,
+  comPadroes,
+  CONFIG_FABRICA,
   novoId
 };

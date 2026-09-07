@@ -47,13 +47,35 @@ depois do jogo.
 
 ## Instalar
 
-Precisa de [Node.js 18 ou mais novo](https://nodejs.org). Uma vez só:
+**Não tem instalação.** O DuStats não usa nenhuma biblioteca de terceiros —
+nada de `npm install`, nada para baixar antes de rodar. A pasta do projeto já é
+o programa.
+
+Você só precisa de um `node` para executá-la, e há dois caminhos:
+
+### Caminho A — pasta portátil (não instala nada)
+
+Num computador que já tenha [Node.js](https://nodejs.org):
 
 ```bash
-npm install
+npm run portatil
 ```
 
+Isso monta a pasta `DuStats-portatil/` com o Node dentro (~85 MB, ~35 MB
+zipada). Copie a pasta inteira para o PC do OBS ou para um pendrive e dê
+**duplo clique no `DuStats.bat`**. Não precisa instalar nada na máquina de
+destino, e o histórico de partidas viaja junto na pasta.
+
+### Caminho B — Node instalado no PC
+
+Instale o [Node.js LTS](https://nodejs.org) uma vez e dê **duplo clique no
+`DuStats.bat`** (no Linux ou Mac, `./dustats.sh`).
+
+Nos dois caminhos o painel abre sozinho no navegador.
+
 ## Rodar
+
+Duplo clique no `DuStats.bat`, ou pelo terminal:
 
 ```bash
 npm start
@@ -204,7 +226,7 @@ do intervalo aparece com 45 minutos de estatísticas na hora — dá para ajusta
 os overlays em segundos em vez de esperar um jogo.
 
 ```bash
-npm test                       # testes do relógio, das estatísticas e do estado
+npm test                       # testes do relógio, das estatísticas, do estado e do transporte
 ```
 
 ## Configuração
@@ -231,7 +253,12 @@ arquiva o atual.
 ## Se algo der errado
 
 **O celular não abre o painel.** Confira que ele está no mesmo Wi-Fi. Se ainda
-assim não abrir, é o firewall do Windows: libere o Node.js na rede privada.
+assim não abrir, é o firewall do Windows: libere o Node.js na rede privada. Na
+primeira vez que você abre o DuStats, o Windows pergunta isso numa janela —
+marque **redes privadas** e permita.
+
+**"A porta 4400 já está em uso".** O DuStats já está aberto em outra janela.
+Feche a antiga, ou rode em outra porta: `set PORT=4401 && npm start`.
 
 **O overlay ficou preto no OBS.** Está tudo certo: os dois só desenham quando
 têm o que mostrar. O `intervalo.html` fica vazio fora do modo Intervalo, e a
@@ -295,6 +322,12 @@ dela a cada leitura (`server/stats.js`). É isso que faz o **desfazer** custar
 uma linha, o reinício do servidor ser exato e a visão computacional caber
 depois sem reescrever nada.
 
+**Zero dependências.** Não só no navegador: o servidor também. HTTP e
+WebSocket são escritos em cima dos módulos do próprio Node (`server/http.js` e
+`server/ws.js`, ~250 linhas somadas). O que tornou isso viável foi o canal ser
+só de descida — o servidor manda estado, e nenhum cliente responde por ele.
+É o que permite não ter `npm install` e carregar tudo num pendrive.
+
 **Nada depende da internet.** Sem CDN, sem fonte do Google, sem biblioteca de
 gráficos. Os gráficos são SVG escrito à mão e o card do Instagram é desenhado
 direto em `<canvas>`. No campo o PC pode estar sem rede, e um overlay que entra
@@ -305,11 +338,11 @@ linha pelo rótulo na mesma lista comparativa que alimenta o painel do intervalo
 (`linhasComparativas()`, em `server/stats.js`). Assim é impossível o rodapé
 mostrar 58% de posse e o painel do intervalo mostrar 57%.
 
-As dependências de produção são duas: `express` e `ws`.
-
 ```
-server/    clock.js (tempo)  stats.js (derivação)  state.js (partida)
-           storage.js (disco)  export.js (CSV)  index.js (HTTP + WebSocket)
-public/    shared/ (bus, campo, painéis, cartão)  control/  overlay/
-config/    futebol.json (regras do esporte)  partida.json (times)
+server/       clock.js (tempo)  stats.js (derivação)  state.js (partida)
+              storage.js (disco)  export.js (CSV)
+              http.js + ws.js (transporte)  index.js (rotas e subida)
+public/       shared/ (bus, campo, painéis, cartão)  control/  overlay/
+config/       futebol.json (regras do esporte)  partida.json (times)
+ferramentas/  montar-portatil.mjs (empacota com o Node dentro)
 ```

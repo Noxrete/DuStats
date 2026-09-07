@@ -4,9 +4,9 @@ const http = require('http');
 const os = require('os');
 const fs = require('fs');
 const path = require('path');
-const express = require('express');
-const { WebSocketServer } = require('ws');
 
+const { criarApp } = require('./http');
+const ws = require('./ws');
 const storage = require('./storage');
 const { Partida } = require('./state');
 const exportar = require('./export');
@@ -20,22 +20,17 @@ const esporte = storage.carregarEsporte(process.env.DUSTATS_ESPORTE || 'futebol'
 let partida = Partida.carregar(esporte);
 storage.salvar(partida.paraDisco());
 
-const app = express();
-app.use(express.json({ limit: '8mb' }));
-app.use(express.static(path.join(RAIZ, 'public')));
+const app = criarApp({ estatico: path.join(RAIZ, 'public') });
 app.get('/', (_req, res) => res.redirect('/control/'));
 app.get('/favicon.ico', (_req, res) => res.status(204).end());
 
-const servidor = http.createServer(app);
-const wss = new WebSocketServer({ server: servidor });
+const servidor = http.createServer(app.manipular);
+const wss = ws.ligar(servidor);
 
 // ---------------------------------------------------------------- transmissão
 
 function publicar() {
-  const pacote = JSON.stringify({ tipo: 'estado', estado: partida.snapshot() });
-  for (const cliente of wss.clients) {
-    if (cliente.readyState === cliente.OPEN) cliente.send(pacote);
-  }
+  wss.transmitir(JSON.stringify({ tipo: 'estado', estado: partida.snapshot() }));
 }
 
 function persistirEPublicar() {
@@ -43,8 +38,8 @@ function persistirEPublicar() {
   publicar();
 }
 
-wss.on('connection', (socket) => {
-  socket.send(JSON.stringify({ tipo: 'estado', estado: partida.snapshot() }));
+wss.aoConectar((cliente) => {
+  cliente.enviar(JSON.stringify({ tipo: 'estado', estado: partida.snapshot() }));
 });
 
 /**
@@ -53,7 +48,7 @@ wss.on('connection', (socket) => {
  * relógio parado nada muda sozinho e o pulso é desligado.
  */
 setInterval(() => {
-  if (wss.clients.size === 0) return;
+  if (wss.quantidade === 0) return;
   if (!partida.derivar().relogio.rodando) return;
   publicar();
 }, 2000);
@@ -62,7 +57,7 @@ setInterval(() => {
 
 function exigirToken(req, res, next) {
   if (!TOKEN) return next();
-  const enviado = req.get('x-dustats-token') || req.query.token;
+  const enviado = req.headers['x-dustats-token'] || req.query.token;
   if (enviado === TOKEN) return next();
   return res.status(401).json({ erro: 'token inválido' });
 }
@@ -195,6 +190,24 @@ app.get('/api/export/partida.json', (_req, res) => {
 
 // ------------------------------------------------------------------ subida
 
+/**
+ * Abre o painel no navegador padrão. Chamado pelos atalhos de duplo clique,
+ * para quem inicia o DuStats não precisar copiar URL nenhuma.
+ */
+function abrirNoNavegador(url) {
+  const { spawn } = require('child_process');
+  const comandos = {
+    win32: ['cmd', ['/c', 'start', '', url]],
+    darwin: ['open', [url]]
+  };
+  const [comando, args] = comandos[process.platform] || ['xdg-open', [url]];
+  try {
+    spawn(comando, args, { detached: true, stdio: 'ignore' }).unref();
+  } catch {
+    /* sem navegador ou sem permissão: as URLs ficam no console mesmo */
+  }
+}
+
 function enderecosLan() {
   const enderecos = [];
   for (const interfaces of Object.values(os.networkInterfaces())) {
@@ -227,4 +240,15 @@ servidor.listen(PORTA, () => {
   console.log('  Placar, cronômetro e replay são do Placar PRO — o DuStats só faz estatística.');
   console.log('');
   if (TOKEN) console.log('  Token de escrita ATIVO (DUSTATS_TOKEN).\n');
+
+  if (process.env.DUSTATS_ABRIR === '1') abrirNoNavegador(`http://localhost:${PORTA}/control/`);
+});
+
+// Porta ocupada é o erro mais comum na segunda vez que se clica no atalho.
+servidor.on('error', (erro) => {
+  if (erro.code !== 'EADDRINUSE') throw erro;
+  console.error(`\n  A porta ${PORTA} já está em uso.`);
+  console.error('  O DuStats provavelmente já está aberto numa outra janela.');
+  console.error(`  Se não estiver, rode com outra porta:  set PORT=4401 && npm start\n`);
+  process.exit(1);
 });

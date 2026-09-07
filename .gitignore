@@ -1,4 +1,6 @@
 node_modules/
+DuStats-portatil/
+node/
 data/matches/
 data/atual.txt
 public/logos/

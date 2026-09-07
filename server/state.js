@@ -19,7 +19,7 @@ class Partida {
     this.id = id || storage.novoId();
     this.esporteId = esporte.id;
     this.esporte = esporte;
-    this.config = config || storage.carregarConfigPadrao();
+    this.config = storage.comPadroes(config || storage.carregarConfigPadrao());
     this.eventos = eventos;
     this.transmissao = transmissao || { modo: 'jogo', slide: 0, atualizadoEm: Date.now() };
     this.criadaEm = criadaEm || Date.now();
