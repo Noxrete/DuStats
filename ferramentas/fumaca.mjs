@@ -126,6 +126,12 @@ async function main() {
     console.log(`  ${temFontes ? 'ok  ' : 'FALHA'}      o estado traz a lista de fontes ligadas`);
     if (!temFontes) falhas.push(`estado.fontes veio ${typeof estado.fontes}, esperado uma lista`);
 
+    // O QR do painel é montado a partir daqui. Se o endereço não vier, ele
+    // some da tela em silêncio e o apontador volta a digitar IP na mão.
+    const temRede = estado.rede && typeof estado.rede === 'object' && 'url' in estado.rede;
+    console.log(`  ${temRede ? 'ok  ' : 'FALHA'}      o estado traz o endereço de rede`);
+    if (!temRede) falhas.push('estado.rede não veio com url');
+
     const salvou = fs.existsSync(path.join(trabalho, 'data', 'matches'));
     console.log(`  ${salvou ? 'ok  ' : 'FALHA'}      partida gravada em disco`);
     if (!salvou) falhas.push('a pasta de partidas não foi criada');

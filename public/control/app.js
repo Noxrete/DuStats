@@ -508,6 +508,73 @@ function desenharUltimos(estado) {
   }
 }
 
+// ------------------------------------------------------- conferência pré-jogo
+
+const NOME_DA_FONTE = {
+  faixa: 'Faixa do rodapé (OBS)',
+  intervalo: 'Painel do intervalo (OBS)'
+};
+
+/** Há quanto tempo, em palavras curtas — cabe na coluna da direita. */
+function desde(quando) {
+  const seg = Math.max(0, Math.round((DuStats.agoraServidor() - quando) / 1000));
+  if (seg < 60) return 'agora há pouco';
+  const min = Math.round(seg / 60);
+  return min < 60 ? `há ${min} min` : `há ${Math.round(min / 60)} h`;
+}
+
+let qrDesenhado = null;   // a URL já desenhada, para não refazer a cada pulso
+
+function desenharConferencia(estado) {
+  const fontes = estado.fontes || [];
+  const itens = [];
+
+  for (const [chave, nome] of Object.entries(NOME_DA_FONTE)) {
+    const ligada = fontes.find((f) => f.fonte === chave);
+    itens.push({
+      estado: ligada ? 'ok' : 'falta',
+      marca: ligada ? '●' : '○',
+      nome,
+      detalhe: ligada ? `recebendo ${desde(ligada.desde)}` : 'não está recebendo'
+    });
+  }
+
+  // Dois painéis abertos registram o mesmo gol duas vezes, e o placar só
+  // denuncia isso depois. Antes de existir a lista de fontes não havia como
+  // saber; agora dá para avisar enquanto ainda é fácil fechar um.
+  const paineis = fontes.filter((f) => f.fonte === 'painel').length;
+  if (paineis > 1) {
+    itens.push({
+      estado: 'alerta',
+      marca: '▲',
+      nome: `${paineis} painéis abertos ao mesmo tempo`,
+      detalhe: 'o mesmo lance pode entrar duas vezes'
+    });
+  }
+
+  $('#checagens').innerHTML = itens.map((i) => `
+    <li class="${i.estado}">
+      <span class="marca">${i.marca}</span>
+      <span class="nome">${i.nome}</span>
+      <span class="detalhe">${i.detalhe}</span>
+    </li>`).join('');
+
+  // O endereço vem do servidor, não do location: quem abre o painel no PC do
+  // OBS abre em localhost, e um QR de localhost manda o celular para si mesmo.
+  const url = estado.rede?.url || null;
+  $('#blocoQr').hidden = !url;
+  if (url && url !== qrDesenhado) {
+    const desenho = DuStats.qr?.svg(url, { tamanho: 132, claro: '#ffffff', escuro: '#0b1020' });
+    if (desenho) {
+      $('#qrDesenho').innerHTML = desenho;
+      $('#qrUrl').textContent = url;
+      qrDesenhado = url;
+    } else {
+      $('#blocoQr').hidden = true;
+    }
+  }
+}
+
 function renderizar(estado) {
   ultimoEstado = estado;
 
@@ -566,6 +633,7 @@ function renderizar(estado) {
 
   montarAjustes(estado);
   preencherAjustes(estado);
+  desenharConferencia(estado);
 }
 
 DuStats.aoEstado(renderizar);

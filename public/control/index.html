@@ -108,6 +108,34 @@
      de que ninguém está marcando antes que o intervalo chegue. */
   .posse .barrinha { transition: opacity 300ms ease; }
   .posse.crua .barrinha { opacity: .28; }
+  .checagens { list-style: none; margin: 0; padding: 0; }
+  /* Duas colunas, não três: em tela de celular o nome e o detalhe lado a lado
+     quebravam em três linhas cada e o cartão virava uma parede de texto. */
+  .checagens li {
+    display: grid; grid-template-columns: 24px 1fr;
+    align-items: baseline; column-gap: 10px; row-gap: 2px;
+    padding: 9px 0; border-top: 1px solid var(--navy-borda);
+    font-size: 15px;
+  }
+  .checagens li:first-child { border-top: 0; }
+  .checagens .marca { font-size: 15px; line-height: 1.3; }
+  .checagens .detalhe { grid-column: 2; font-size: 13px; color: var(--texto-fraco); }
+  .checagens .ok .marca { color: var(--acento); }
+  /* Falta e alerta ficam visualmente diferentes: falta é o que ainda dá para
+     resolver antes do apito; alerta é algo ligado que não deveria estar. */
+  .checagens .falta .marca { color: #ff8b6b; }
+  .checagens .falta .nome { color: #ffd9cf; }
+  .checagens .alerta .marca { color: #ffcc55; }
+
+  .qr { display: flex; align-items: center; gap: 16px; margin-top: 14px; }
+  .qr-desenho { flex: 0 0 auto; line-height: 0; border-radius: 6px; overflow: hidden; }
+  .qr-texto { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .qr-rotulo {
+    font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--texto-fraco);
+  }
+  .qr code { font-size: 13px; word-break: break-all; color: #fff; }
+
   .posse-aviso {
     grid-column: 1 / -1;
     margin-top: 5px; text-align: center;
@@ -392,6 +420,21 @@
 
   <!-- ---------------------------------------------------------- AJUSTES -->
   <section class="aba" id="aba-ajustes" hidden>
+    <!-- Primeiro item da aba de propósito: é a última coisa a conferir antes
+         do apito, e o pior modo de falha do sistema é a Fonte de Navegador do
+         OBS não estar recebendo — hoje isso só aparece no intervalo, no ar. -->
+    <div class="cartao conferencia">
+      <h3>Conferência antes do jogo</h3>
+      <ul class="checagens" id="checagens"></ul>
+      <div class="qr" id="blocoQr" hidden>
+        <div class="qr-desenho" id="qrDesenho"></div>
+        <div class="qr-texto">
+          <span class="qr-rotulo">Aponte a câmera do celular</span>
+          <code id="qrUrl"></code>
+        </div>
+      </div>
+    </div>
+
     <div class="cartao">
       <h3>Partida</h3>
       <label for="cfgCompeticao">Competição</label>
@@ -468,6 +511,7 @@
 <script src="/shared/bus.js"></script>
 <script src="/shared/relogio.js"></script>
 <script src="/shared/campo.js"></script>
+<script src="/shared/qr.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

@@ -276,6 +276,22 @@ A cada push e pull request, o GitHub Actions roda:
 E, quando uma tag `v*` é empurrada, o fluxo `publicar.yml` roda os testes de
 novo, monta o executável e cria a Release com o `.exe` anexado.
 
+## Conferência antes do jogo
+
+A aba **Ajustes** abre numa lista de checagens. Ela existe porque o pior modo de
+falha do sistema não é estatística errada — é a Fonte de Navegador do OBS não
+estar recebendo, e isso só aparecer no intervalo, no ar.
+
+O servidor sabe quem está pendurado nele: cada página se identifica na query do
+handshake do WebSocket, então a lista diz, antes do apito, se a faixa e o painel
+do intervalo estão recebendo, e há quanto tempo. Se dois painéis estiverem
+abertos ao mesmo tempo, avisa também — dois apontadores registram o mesmo gol
+duas vezes, e o placar só denuncia isso depois.
+
+No mesmo cartão sai um QR com o endereço do painel. O endereço vem do servidor,
+não do navegador: quem abre no PC do OBS abre em `localhost`, e um QR de
+`localhost` manda o celular para o próprio celular.
+
 ## Configuração
 
 | Variável | Padrão | Para quê |

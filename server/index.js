@@ -95,13 +95,37 @@ const wss = ws.ligar(servidor);
 
 // ---------------------------------------------------------------- transmissão
 
+function enderecosLan() {
+  const enderecos = [];
+  for (const interfaces of Object.values(os.networkInterfaces())) {
+    for (const iface of interfaces || []) {
+      if (iface.family === 'IPv4' && !iface.internal) enderecos.push(iface.address);
+    }
+  }
+  return enderecos;
+}
+
 /**
- * O estado que vai para a tela. As fontes ligadas entram aqui, e não em
- * `partida.snapshot()`, porque quem está pendurado no WebSocket é assunto do
- * transporte — a partida não precisa saber que existe rede.
+ * O endereço que o celular precisa alcançar. Tem que sair do servidor, não do
+ * `location.host` do navegador: quem abre o painel no PC do OBS abre em
+ * localhost, e um QR de "localhost" leva o celular para o próprio celular.
+ */
+function rede() {
+  const ip = enderecosLan()[0] || null;
+  return {
+    ip,
+    porta: PORTA,
+    url: ip ? `http://${ip}:${PORTA}/control/` : null
+  };
+}
+
+/**
+ * O estado que vai para a tela. As fontes ligadas e o endereço de rede entram
+ * aqui, e não em `partida.snapshot()`, porque quem está pendurado no WebSocket
+ * é assunto do transporte — a partida não precisa saber que existe rede.
  */
 function snapshot() {
-  return { ...partida.snapshot(), fontes: wss.fontes() };
+  return { ...partida.snapshot(), fontes: wss.fontes(), rede: rede() };
 }
 
 function publicar() {
@@ -292,16 +316,6 @@ function abrirNoNavegador(url) {
   } catch {
     /* sem permissão para criar processo: as URLs ficam no console mesmo */
   }
-}
-
-function enderecosLan() {
-  const enderecos = [];
-  for (const interfaces of Object.values(os.networkInterfaces())) {
-    for (const iface of interfaces || []) {
-      if (iface.family === 'IPv4' && !iface.internal) enderecos.push(iface.address);
-    }
-  }
-  return enderecos;
 }
 
 servidor.listen(PORTA, () => {
