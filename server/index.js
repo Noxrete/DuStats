@@ -268,9 +268,15 @@ function abrirNoNavegador(url) {
   };
   const [comando, args] = comandos[process.platform] || ['xdg-open', [url]];
   try {
-    spawn(comando, args, { detached: true, stdio: 'ignore' }).unref();
+    const filho = spawn(comando, args, { detached: true, stdio: 'ignore' });
+    // O spawn avisa de comando inexistente por EVENTO, não por exceção: sem
+    // este ouvinte o ENOENT sobe até o tratador global e derruba o servidor
+    // inteiro. Não conseguir abrir o navegador é um detalhe — as URLs estão
+    // logo acima, no console — e nunca pode custar a transmissão.
+    filho.on('error', () => {});
+    filho.unref();
   } catch {
-    /* sem navegador ou sem permissão: as URLs ficam no console mesmo */
+    /* sem permissão para criar processo: as URLs ficam no console mesmo */
   }
 }
 
@@ -307,7 +313,15 @@ servidor.listen(PORTA, () => {
   console.log('');
   if (TOKEN) console.log('  Token de escrita ATIVO (DUSTATS_TOKEN).\n');
 
-  if (process.env.DUSTATS_ABRIR === '1') abrirNoNavegador(`http://localhost:${PORTA}/control/`);
+  // No executável, abrir o painel é o comportamento esperado de um duplo
+  // clique — ninguém vai copiar URL do console. Rodando pelo código, não: o
+  // desenvolvedor reinicia o servidor o tempo todo e não quer uma aba nova a
+  // cada vez. Nos dois casos o DUSTATS_ABRIR decide, se estiver definido.
+  const abrirPorPadrao = recursos.dentroDoExecutavel();
+  const abrir = process.env.DUSTATS_ABRIR === undefined || process.env.DUSTATS_ABRIR === ''
+    ? abrirPorPadrao
+    : process.env.DUSTATS_ABRIR === '1';
+  if (abrir) abrirNoNavegador(`http://localhost:${PORTA}/control/`);
 });
 
 // Porta ocupada é o erro mais comum na segunda vez que se clica no atalho.

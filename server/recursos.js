@@ -95,4 +95,7 @@ function caminhoDeConfig(nome) {
   return path.join(raizDeDados(), 'config', `${nome}.json`);
 }
 
-module.exports = { empacotado, raizDeDados, estatico, config, caminhoDeConfig, RAIZ_PROJETO };
+module.exports = {
+  empacotado, dentroDoExecutavel, raizDeDados,
+  estatico, config, caminhoDeConfig, RAIZ_PROJETO
+};
