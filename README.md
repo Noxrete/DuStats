@@ -92,6 +92,11 @@ Para publicar uma versão nova, marque a versão — o resto é automático:
 git tag v0.2.0 && git push origin v0.2.0
 ```
 
+Sem terminal, dá para fazer o mesmo pela web: em **Releases → Draft a new
+release**, digite a tag em *Choose a tag*, confira o **Target** e publique. O
+fluxo roda em cima da tag recém-criada e anexa o `.exe` sozinho — e, como a
+release já existe nesse caminho, ele anexa em vez de tentar criar de novo.
+
 Se preferir gerar na sua máquina, com [Node.js](https://nodejs.org) instalado:
 
 ```bash

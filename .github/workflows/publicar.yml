@@ -52,7 +52,18 @@ jobs:
             VERSAO="build-$(date -u +%Y%m%d-%H%M)"
           fi
 
-          gh release create "$VERSAO" build/DuStats.exe \
-            --title "DuStats $VERSAO" \
-            --notes-file .github/notas-release.md \
-            --target "$GITHUB_SHA"
+          # A versão pode já existir: criar a tag pela página de Releases do
+          # GitHub publica a release E dispara este fluxo, e aí o `create`
+          # falharia com "release already exists". Nesse caso, anexa o
+          # executável à que está lá em vez de reprovar a execução.
+          if gh release view "$VERSAO" >/dev/null 2>&1; then
+            gh release upload "$VERSAO" build/DuStats.exe --clobber
+            gh release edit "$VERSAO" \
+              --title "DuStats $VERSAO" \
+              --notes-file .github/notas-release.md
+          else
+            gh release create "$VERSAO" build/DuStats.exe \
+              --title "DuStats $VERSAO" \
+              --notes-file .github/notas-release.md \
+              --target "$GITHUB_SHA"
+          fi
