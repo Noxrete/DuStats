@@ -566,6 +566,14 @@ function desenharConferencia(estado) {
   // digitar no OUTRO celular, e localhost não serve para ninguém além deste.
   $('#urlPosse').textContent = url ? `${url}posse.html` : '';
   $('#blocoQr').hidden = !url;
+
+  // O endereço do QR é o da rota padrão, que é o palpite certo na maioria das
+  // vezes e não em todas: PC com internet no cabo e celular no Wi-Fi caem em
+  // redes diferentes. Mostrar os outros custa três linhas e evita o operador
+  // adivinhando na beira do campo.
+  const outros = estado.rede?.alternativos || [];
+  $('#outrosEnderecos').hidden = outros.length === 0;
+  $('#listaEnderecos').innerHTML = outros.map((e) => `<li>${escapar(e)}</li>`).join('');
   if (url && url !== qrDesenhado) {
     const desenho = DuStats.qr?.svg(url, { tamanho: 132, claro: '#ffffff', escuro: '#0b1020' });
     if (desenho) {

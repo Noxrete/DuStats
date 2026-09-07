@@ -2,6 +2,7 @@
 
 const http = require('http');
 const os = require('os');
+const dgram = require('dgram');
 const fs = require('fs');
 const path = require('path');
 
@@ -99,23 +100,72 @@ function enderecosLan() {
   const enderecos = [];
   for (const interfaces of Object.values(os.networkInterfaces())) {
     for (const iface of interfaces || []) {
-      if (iface.family === 'IPv4' && !iface.internal) enderecos.push(iface.address);
+      if (iface.family !== 'IPv4' || iface.internal) continue;
+      // 169.254.x.x é o endereço que o Windows inventa quando não conseguiu IP
+      // nenhum. Nunca leva a lugar algum, e como costuma vir antes do Wi-Fi na
+      // lista, viraria o endereço "oficial" do QR.
+      if (iface.address.startsWith('169.254.')) continue;
+      enderecos.push(iface.address);
     }
   }
   return enderecos;
+}
+
+let ipPreferido = null;
+
+/**
+ * Qual das interfaces é a que sai para a rede.
+ *
+ * Pegar a primeira da lista, como era antes, quebra num PC de transmissão: se
+ * houver VirtualBox, VMware, Hyper-V, WSL ou VPN instalados, o adaptador
+ * virtual costuma vir antes do Wi-Fi. O QR sairia com um 192.168.x.x de cara
+ * perfeitamente plausível, que o celular nunca alcança — e o sintoma é o pior
+ * possível: a página não dá erro, fica carregando para sempre.
+ *
+ * O truque é perguntar ao próprio sistema qual endereço de origem ele usaria
+ * para falar com o mundo. `connect` num socket UDP não manda pacote nenhum;
+ * só faz o sistema consultar a tabela de rotas e fixar a origem.
+ */
+function descobrirIpPrincipal() {
+  return new Promise((resolve) => {
+    let socket;
+    const desistir = () => {
+      try { socket?.close(); } catch { /* já fechado */ }
+      resolve(null);
+    };
+    try {
+      socket = dgram.createSocket('udp4');
+      socket.once('error', desistir);       // sem rota padrão: rede sem saída
+      socket.connect(80, '8.8.8.8', () => {
+        let endereco = null;
+        try { endereco = socket.address().address; } catch { /* fechou antes */ }
+        try { socket.close(); } catch { /* já fechado */ }
+        resolve(endereco && endereco !== '0.0.0.0' ? endereco : null);
+      });
+    } catch {
+      desistir();
+    }
+  });
 }
 
 /**
  * O endereço que o celular precisa alcançar. Tem que sair do servidor, não do
  * `location.host` do navegador: quem abre o painel no PC do OBS abre em
  * localhost, e um QR de "localhost" leva o celular para o próprio celular.
+ *
+ * `alternativos` existe porque nem sempre dá para acertar de primeira: se o PC
+ * tem internet pelo cabo e o celular está no Wi-Fi, a rota padrão aponta para o
+ * cabo e o celular precisa do outro endereço. Melhor oferecer a lista do que
+ * deixar o operador adivinhando.
  */
 function rede() {
-  const ip = enderecosLan()[0] || null;
+  const todos = enderecosLan();
+  const ip = todos.includes(ipPreferido) ? ipPreferido : (todos[0] || null);
   return {
     ip,
     porta: PORTA,
-    url: ip ? `http://${ip}:${PORTA}/control/` : null
+    url: ip ? `http://${ip}:${PORTA}/control/` : null,
+    alternativos: todos.filter((e) => e !== ip).map((e) => `http://${e}:${PORTA}/control/`)
   };
 }
 
@@ -317,6 +367,12 @@ function abrirNoNavegador(url) {
     /* sem permissão para criar processo: as URLs ficam no console mesmo */
   }
 }
+
+descobrirIpPrincipal().then((ip) => {
+  if (!ip || ip === ipPreferido) return;
+  ipPreferido = ip;
+  publicar();   // o painel já pode estar aberto com o endereço errado na tela
+});
 
 servidor.listen(PORTA, () => {
   const hosts = ['localhost', ...enderecosLan()];

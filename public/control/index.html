@@ -148,6 +148,10 @@
   }
   .qr code { font-size: 13px; word-break: break-all; color: #fff; }
 
+  .outros { margin-top: 12px; }
+  .outros ul { list-style: none; margin: 6px 0 0; padding: 0; }
+  .outros li { font-size: 12px; color: #fff; word-break: break-all; padding: 3px 0; }
+
   .posse-aviso {
     grid-column: 1 / -1;
     margin-top: 5px; text-align: center;
@@ -444,6 +448,10 @@
           <span class="qr-rotulo">Aponte a câmera do celular</span>
           <code id="qrUrl"></code>
         </div>
+      </div>
+      <div class="outros" id="outrosEnderecos" hidden>
+        <span class="qr-rotulo">Se o celular ficar carregando, tente</span>
+        <ul id="listaEnderecos"></ul>
       </div>
     </div>
 

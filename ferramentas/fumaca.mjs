@@ -130,9 +130,17 @@ async function main() {
 
     // O QR do painel é montado a partir daqui. Se o endereço não vier, ele
     // some da tela em silêncio e o apontador volta a digitar IP na mão.
-    const temRede = estado.rede && typeof estado.rede === 'object' && 'url' in estado.rede;
+    const temRede = estado.rede && typeof estado.rede === 'object'
+      && 'url' in estado.rede && Array.isArray(estado.rede.alternativos);
     console.log(`  ${temRede ? 'ok  ' : 'FALHA'}      o estado traz o endereço de rede`);
-    if (!temRede) falhas.push('estado.rede não veio com url');
+    if (!temRede) falhas.push('estado.rede não veio com url e alternativos');
+
+    // O endereço do QR nunca pode ser o de loopback: seria um QR que manda o
+    // celular para o próprio celular, e a página ficaria carregando sem erro.
+    const url = estado.rede?.url || '';
+    const loopback = /127\.0\.0\.1|localhost/.test(url);
+    console.log(`  ${loopback ? 'FALHA' : 'ok  '}      o endereço do QR não é loopback${url ? ` (${url})` : ' (sem rede)'}`);
+    if (loopback) falhas.push(`estado.rede.url aponta para o próprio aparelho: ${url}`);
 
     const salvou = fs.existsSync(path.join(trabalho, 'data', 'matches'));
     console.log(`  ${salvou ? 'ok  ' : 'FALHA'}      partida gravada em disco`);
