@@ -113,3 +113,33 @@ jobs:
             }
             console.log("Todos os require são relativos ou nativos do Node.");
           '
+
+  executavel:
+    name: Gerar o DuStats.exe
+    runs-on: ubuntu-latest
+    # Só fora de pull request: baixar o Node do Windows a cada revisão deixaria
+    # a CI lenta sem necessidade. O que interessa numa PR é o teste, não o
+    # empacote final.
+    if: github.event_name != 'pull_request'
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # Baixa o Node oficial para Windows, injeta o DuStats dentro dele e
+      # devolve um arquivo só. O postject é instalado pelo próprio script.
+      - name: Montar o executável
+        run: npm run exe
+
+      # É daqui que o executável é baixado, sem ninguém precisar de Node nem
+      # de terminal para tê-lo.
+      - name: Publicar para download
+        uses: actions/upload-artifact@v4
+        with:
+          name: DuStats-Windows
+          path: build/DuStats.exe
+          retention-days: 90
+          if-no-files-found: error

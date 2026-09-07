@@ -64,13 +64,20 @@ histórico).
 > **Mais informações** → **Executar assim mesmo**. Se o antivírus reclamar,
 > libere o arquivo: executáveis feitos assim costumam dar alarme falso.
 
-### Gerar o executável
+### Onde baixar o executável
 
-O `.exe` não fica no repositório (tem 83 MB). Para gerar, num computador com
-[Node.js](https://nodejs.org):
+O `.exe` não fica no repositório (tem 83 MB) — a CI monta a cada push na `main`
+e publica para download:
+
+1. Abra a [aba Actions](https://github.com/Noxrete/DuStats/actions/workflows/testes.yml)
+2. Clique na execução mais recente que estiver verde
+3. Role até **Artifacts** e baixe **DuStats-Windows**
+4. Descompacte o `.zip` — dentro está o `DuStats.exe`
+
+Se preferir gerar na sua máquina, com [Node.js](https://nodejs.org) instalado:
 
 ```bash
-npm run exe          # gera build/DuStats.exe para Windows
+npm run exe          # gera build/DuStats.exe
 ```
 
 O comando baixa o Node oficial para Windows, empacota o DuStats inteiro dentro
