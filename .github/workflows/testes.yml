@@ -117,10 +117,9 @@ jobs:
   executavel:
     name: Gerar o DuStats.exe
     runs-on: ubuntu-latest
-    # Só fora de pull request: baixar o Node do Windows a cada revisão deixaria
-    # a CI lenta sem necessidade. O que interessa numa PR é o teste, não o
-    # empacote final.
-    if: github.event_name != 'pull_request'
+    # Roda TAMBÉM em pull request. Pular aqui economizava ~40 s de CI e custava
+    # o que importa: sem artefato na PR, a única forma de pegar o executável
+    # para testar seria mesclar antes de saber se funciona.
 
     steps:
       - uses: actions/checkout@v5
