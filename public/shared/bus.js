@@ -76,9 +76,21 @@
 
   // ------------------------------------------------------------- websocket
 
+  /**
+   * Qual página é esta, para o servidor saber quem está pendurado nele. Vai na
+   * query do handshake, e não como mensagem: o canal é só de descida — nenhum
+   * cliente jamais escreve pelo WebSocket — e manter assim é o que permite o
+   * servidor de 170 linhas sem biblioteca.
+   */
+  function nomeDaFonte() {
+    if (location.pathname.startsWith('/control')) return 'painel';
+    const casado = location.pathname.match(/\/overlay\/([a-z]+)\.html$/);
+    return casado ? casado[1] : 'outra';
+  }
+
   function conectar() {
     const protocolo = location.protocol === 'https:' ? 'wss' : 'ws';
-    ws = new WebSocket(`${protocolo}://${location.host}`);
+    ws = new WebSocket(`${protocolo}://${location.host}/?fonte=${nomeDaFonte()}`);
 
     ws.onopen = () => {
       conectado = true;

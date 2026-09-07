@@ -75,9 +75,48 @@ function opcodesRecebidos(pedaco) {
  * Liga o WebSocket a um servidor HTTP já criado.
  * Devolve { transmitir, aoConectar, quantidade }.
  */
+/**
+ * Quem pode aparecer pendurado no WebSocket. A lista é fechada de propósito: o
+ * nome chega por query string, portanto vem de qualquer um na mesma rede, e vai
+ * parar no snapshot que o painel desenha. Nome fora da lista vira "outra".
+ */
+const FONTES = new Set(['painel', 'faixa', 'intervalo', 'resumo']);
+
+function fonteDoPedido(url) {
+  const busca = String(url || '').split('?')[1] || '';
+  const nome = new URLSearchParams(busca).get('fonte');
+  return FONTES.has(nome) ? nome : 'outra';
+}
+
 function ligar(servidor) {
-  const clientes = new Set();
+  // Map, não Set: além do socket, guarda QUEM ele é e desde quando está ligado.
+  // É o que deixa o painel responder, antes do apito, se a fonte do OBS está
+  // mesmo recebendo — em vez de o operador descobrir no intervalo, no ar.
+  const clientes = new Map();
   const ouvintesDeConexao = [];
+  const ouvintesDeMudanca = [];
+
+  // O aviso sai adiado e coalescido, nunca no meio da operação que o causou.
+  // Sem isso há reentrância: transmitir() acha um socket morto, remove, avisa,
+  // e o ouvinte chama transmitir() de novo por dentro do laço que ainda está
+  // rodando. De quebra, três fontes do OBS subindo juntas viram uma publicação
+  // só em vez de três.
+  let mudancaAgendada = false;
+  function avisarMudanca() {
+    if (mudancaAgendada) return;
+    mudancaAgendada = true;
+    setImmediate(() => {
+      mudancaAgendada = false;
+      for (const fn of ouvintesDeMudanca) fn();
+    });
+  }
+
+  /** Único lugar que tira cliente da lista, para nenhuma saída passar batida. */
+  function remover(socket) {
+    if (!clientes.delete(socket)) return false;
+    avisarMudanca();
+    return true;
+  }
 
   servidor.on('upgrade', (req, socket) => {
     const chave = req.headers['sec-websocket-key'];
@@ -96,10 +135,10 @@ function ligar(servidor) {
 
     // Nagle atrasaria pacotes pequenos — e aqui todo pacote é pequeno e urgente.
     socket.setNoDelay(true);
-    clientes.add(socket);
+    clientes.set(socket, { fonte: fonteDoPedido(req.url), desde: Date.now() });
 
     const encerrar = () => {
-      if (!clientes.delete(socket)) return;
+      if (!remover(socket)) return;
       socket.destroy();
     };
 
@@ -115,17 +154,18 @@ function ligar(servidor) {
     socket.on('close', encerrar);
 
     for (const fn of ouvintesDeConexao) fn({ enviar: (texto) => enviarPara(socket, texto) });
+    avisarMudanca();
   });
 
   function enviarPara(socket, texto) {
     if (socket.destroyed || !socket.writable) {
-      clientes.delete(socket);
+      remover(socket);
       return;
     }
     try {
       socket.write(quadroDeTexto(texto));
     } catch {
-      clientes.delete(socket);
+      remover(socket);
       socket.destroy();
     }
   }
@@ -136,12 +176,12 @@ function ligar(servidor) {
    * força o socket a falhar e sair da lista.
    */
   const pulso = setInterval(() => {
-    for (const socket of clientes) {
-      if (socket.destroyed || !socket.writable) { clientes.delete(socket); continue; }
+    for (const socket of [...clientes.keys()]) {
+      if (socket.destroyed || !socket.writable) { remover(socket); continue; }
       try {
         socket.write(quadroDeControle(0x9));
       } catch {
-        clientes.delete(socket);
+        remover(socket);
         socket.destroy();
       }
     }
@@ -152,18 +192,25 @@ function ligar(servidor) {
     aoConectar: (fn) => ouvintesDeConexao.push(fn),
     transmitir(texto) {
       const quadro = quadroDeTexto(texto);
-      for (const socket of clientes) {
-        if (socket.destroyed || !socket.writable) { clientes.delete(socket); continue; }
+      for (const socket of [...clientes.keys()]) {
+        if (socket.destroyed || !socket.writable) { remover(socket); continue; }
         try {
           socket.write(quadro);
         } catch {
-          clientes.delete(socket);
+          remover(socket);
           socket.destroy();
         }
       }
+    },
+    aoMudarFontes: (fn) => ouvintesDeMudanca.push(fn),
+    /** Quem está ligado agora, na ordem em que chegou. */
+    fontes() {
+      return [...clientes.values()]
+        .map(({ fonte, desde }) => ({ fonte, desde }))
+        .sort((a, b) => a.desde - b.desde);
     },
     get quantidade() { return clientes.size; }
   };
 }
 
-module.exports = { ligar, quadroDeTexto, opcodesRecebidos };
+module.exports = { ligar, quadroDeTexto, opcodesRecebidos, fonteDoPedido };

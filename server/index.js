@@ -95,8 +95,17 @@ const wss = ws.ligar(servidor);
 
 // ---------------------------------------------------------------- transmissão
 
+/**
+ * O estado que vai para a tela. As fontes ligadas entram aqui, e não em
+ * `partida.snapshot()`, porque quem está pendurado no WebSocket é assunto do
+ * transporte — a partida não precisa saber que existe rede.
+ */
+function snapshot() {
+  return { ...partida.snapshot(), fontes: wss.fontes() };
+}
+
 function publicar() {
-  wss.transmitir(JSON.stringify({ tipo: 'estado', estado: partida.snapshot() }));
+  wss.transmitir(JSON.stringify({ tipo: 'estado', estado: snapshot() }));
 }
 
 function persistirEPublicar() {
@@ -105,8 +114,13 @@ function persistirEPublicar() {
 }
 
 wss.aoConectar((cliente) => {
-  cliente.enviar(JSON.stringify({ tipo: 'estado', estado: partida.snapshot() }));
+  cliente.enviar(JSON.stringify({ tipo: 'estado', estado: snapshot() }));
 });
+
+// Fonte que entra ou cai muda o estado que o painel desenha, e nada mais vai
+// disparar uma publicação: o placar não mudou. Sem isto, a conferência
+// pré-jogo só sairia do lugar no próximo lance registrado.
+wss.aoMudarFontes(() => publicar());
 
 /**
  * Com o relógio correndo, a posse de bola muda a cada segundo mesmo sem
@@ -128,7 +142,7 @@ function exigirToken(req, res, next) {
   return res.status(401).json({ erro: 'token inválido' });
 }
 
-app.get('/api/estado', (_req, res) => res.json(partida.snapshot()));
+app.get('/api/estado', (_req, res) => res.json(snapshot()));
 
 app.get('/api/eventos', (_req, res) => res.json(partida.derivar().eventos));
 

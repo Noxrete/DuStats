@@ -3,7 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { quadroDeTexto, opcodesRecebidos } = require('../server/ws');
+const { quadroDeTexto, opcodesRecebidos, fonteDoPedido } = require('../server/ws');
 
 /** Monta um quadro do jeito que o navegador manda: sempre mascarado. */
 function quadroDoCliente(opcode, carga = Buffer.alloc(0)) {
@@ -70,4 +70,23 @@ test('vários quadros que chegam grudados são lidos todos', () => {
 test('pedaço truncado não trava nem lança', () => {
   assert.deepEqual(opcodesRecebidos(Buffer.from([0x88])), []);
   assert.deepEqual(opcodesRecebidos(Buffer.alloc(0)), []);
+});
+
+/*
+ * O nome da fonte chega por query string, no handshake — ou seja, vem de
+ * qualquer um que alcance a porta, e acaba desenhado na tela de conferência.
+ * A lista fechada é o que impede texto de estranho de chegar lá.
+ */
+test('a fonte vem da query do handshake e só aceita nome conhecido', () => {
+  assert.equal(fonteDoPedido('/?fonte=faixa'), 'faixa');
+  assert.equal(fonteDoPedido('/?fonte=intervalo'), 'intervalo');
+  assert.equal(fonteDoPedido('/?fonte=painel'), 'painel');
+
+  assert.equal(fonteDoPedido('/'), 'outra', 'sem query');
+  assert.equal(fonteDoPedido(''), 'outra');
+  assert.equal(fonteDoPedido(undefined), 'outra');
+  assert.equal(fonteDoPedido('/?fonte=Faixa'), 'outra', 'a lista é sensível a caixa');
+  assert.equal(fonteDoPedido('/?fonte=<img src=x onerror=alert(1)>'), 'outra');
+  assert.equal(fonteDoPedido('/?outro=faixa'), 'outra', 'query de outro nome não vale');
+  assert.equal(fonteDoPedido('/?fonte=faixa&fonte=painel'), 'faixa', 'fica o primeiro');
 });

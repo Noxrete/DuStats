@@ -120,6 +120,12 @@ async function main() {
     console.log(`  ${placarCerto ? 'ok  ' : 'FALHA'}      gol gravado aparece no placar`);
     if (!placarCerto) falhas.push(`placar da casa ficou ${estado.placar?.casa}, esperado 1`);
 
+    // A conferência pré-jogo do painel se apoia nisto: sem `fontes` no estado,
+    // ela mostraria "nada conectado" para sempre, sem erro nenhum aparecer.
+    const temFontes = Array.isArray(estado.fontes);
+    console.log(`  ${temFontes ? 'ok  ' : 'FALHA'}      o estado traz a lista de fontes ligadas`);
+    if (!temFontes) falhas.push(`estado.fontes veio ${typeof estado.fontes}, esperado uma lista`);
+
     const salvou = fs.existsSync(path.join(trabalho, 'data', 'matches'));
     console.log(`  ${salvou ? 'ok  ' : 'FALHA'}      partida gravada em disco`);
     if (!salvou) falhas.push('a pasta de partidas não foi criada');
