@@ -13,6 +13,14 @@ const PESO_PRESSAO = {
 };
 const PESO_POSSE = 2; // domínio total da posse numa janela vale 2 pontos
 
+/**
+ * Fração mínima do tempo corrido que precisa estar atribuída a algum time para
+ * a posse poder ir ao ar. Um jogo acompanhado de verdade fica bem acima disto
+ * (a bola passa mais da metade do tempo em jogo); o que o corte pega é o
+ * apontador que marcou uma ou duas vezes e parou.
+ */
+const COBERTURA_MINIMA = 0.25;
+
 function novoAcumulador() {
   return {
     gols: 0,
@@ -200,13 +208,23 @@ function derivar(eventos, esporte, wallAgora = Date.now()) {
   creditarPosse(estadoRelogio.tTotal, estadoRelogio.periodo);
 
   const posseTotal = total.casa.posseMs + total.fora.posseMs;
+  // Quanto do tempo corrido foi de fato atribuído a algum time. Todo instante
+  // antes da primeira marcação cai em `posseMsParada`, então uma batida solta
+  // aos 44' do primeiro tempo dá cobertura de ~2%, e um jogo acompanhado de
+  // verdade passa de 50% — a bola fica em jogo mais da metade do tempo.
+  const observado = posseTotal + posseMsParada;
+  const cobertura = observado > 0 ? posseTotal / observado : 0;
   const posse = {
     msCasa: total.casa.posseMs,
     msFora: total.fora.posseMs,
     msParada: posseMsParada,
     casa: posseTotal > 0 ? Math.round((total.casa.posseMs / posseTotal) * 100) : 50,
     fora: posseTotal > 0 ? 100 - Math.round((total.casa.posseMs / posseTotal) * 100) : 50,
-    medida: posseTotal > 0
+    cobertura,
+    // Uma marcação solta é matematicamente igual a um jogo inteiro dominado:
+    // as duas dão 100% × 0%. O que separa as duas é quanto do jogo foi
+    // observado, e é por isso que a cobertura entra aqui.
+    medida: posseTotal > 0 && cobertura >= COBERTURA_MINIMA
   };
 
   const momentum = bins.map((bin) => {
@@ -247,8 +265,18 @@ function linhasComparativas(stats) {
   const { totais, posse } = stats;
   // `destacar` marca as linhas em que liderar é mérito — só nelas o número do
   // time na frente sai pintado. Liderar em faltas ou cartões não é vantagem.
-  const linhas = [
-    { rotulo: 'Posse de bola', casa: posse.casa, fora: posse.fora, sufixo: '%', barra: true, destacar: true },
+  const linhas = [];
+
+  // A posse só vai ao ar depois de ser medida de verdade. Sem esta guarda, um
+  // jogo em que ninguém marcou posse — o apontador esqueceu, o celular travou,
+  // ele estava ocupado com o lance — exibe "50% × 50%" com a mesma cara de
+  // confiança dos números que foram contados. Número inventado é pior que
+  // linha faltando: de casa, ninguém tem como distinguir um do outro.
+  if (posse.medida) {
+    linhas.push({ rotulo: 'Posse de bola', casa: posse.casa, fora: posse.fora, sufixo: '%', barra: true, destacar: true });
+  }
+
+  linhas.push(
     { rotulo: 'Finalizações', casa: totais.casa.finalizacoes, fora: totais.fora.finalizacoes, barra: true, destacar: true },
     { rotulo: 'No gol', casa: totais.casa.noGol, fora: totais.fora.noGol, barra: true, destacar: true },
     { rotulo: 'Precisão', casa: totais.casa.precisao, fora: totais.fora.precisao, sufixo: '%', barra: true, destacar: true },
@@ -258,7 +286,7 @@ function linhasComparativas(stats) {
     { rotulo: 'Defesas', casa: totais.casa.defesas, fora: totais.fora.defesas, barra: true, destacar: false },
     { rotulo: 'Cartões amarelos', casa: totais.casa.amarelos, fora: totais.fora.amarelos, barra: false, destacar: false },
     { rotulo: 'Cartões vermelhos', casa: totais.casa.vermelhos, fora: totais.fora.vermelhos, barra: false, destacar: false }
-  ];
+  );
   // Cartões só entram no ar se alguém tomou algum.
   return linhas.filter((l) => l.barra || l.casa > 0 || l.fora > 0);
 }

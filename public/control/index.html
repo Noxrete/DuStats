@@ -102,6 +102,18 @@
   .posse .casa[aria-pressed="true"] { background: var(--cor-casa); color: var(--texto-casa); }
   .posse .fora[aria-pressed="true"] { background: var(--cor-fora); color: var(--texto-fora); }
   .posse .parada[aria-pressed="true"] { background: #46505f; }
+
+  /* Enquanto a posse não é medida o suficiente para ir ao ar, a barrinha não
+     pode ter a mesma cara de um número pronto: apagada, ela avisa o apontador
+     de que ninguém está marcando antes que o intervalo chegue. */
+  .posse .barrinha { transition: opacity 300ms ease; }
+  .posse.crua .barrinha { opacity: .28; }
+  .posse-aviso {
+    grid-column: 1 / -1;
+    margin-top: 5px; text-align: center;
+    font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--texto-fraco);
+  }
   .posse .barrinha { grid-column: 1 / -1; }
 
   /* ------------------------------------------------------------ conteúdo */
@@ -281,10 +293,11 @@
     <button class="casa" data-posse="casa" aria-pressed="false">Posse casa</button>
     <button class="parada" data-posse="" aria-pressed="true">Parada</button>
     <button class="fora" data-posse="fora" aria-pressed="false">Posse fora</button>
-    <div class="barrinha trilho">
+    <div class="barrinha trilho" id="barrinhaPosse">
       <span class="casa" id="barraCasa" style="width:50%"></span>
       <span class="fora" id="barraFora" style="width:50%"></span>
     </div>
+    <div class="posse-aviso" id="posseAviso" hidden>Posse ainda não vai ao ar</div>
   </div>
 </header>
 

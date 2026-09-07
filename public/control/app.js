@@ -539,6 +539,11 @@ function renderizar(estado) {
   }
   $('#barraCasa').style.width = `${estado.posse.casa}%`;
   $('#barraFora').style.width = `${estado.posse.fora}%`;
+  // O 50/50 (ou o 100/0 de uma batida solta) continua desenhado aqui, porque o
+  // apontador precisa ver o que marcou. O que muda é a aparência: apagada, a
+  // barrinha diz que este número ainda não é bom o bastante para o ar.
+  $('.posse').classList.toggle('crua', !estado.posse.medida);
+  $('#posseAviso').hidden = Boolean(estado.posse.medida);
 
   const desfazer = $('#btDesfazer');
   const naAbaLances = !$('#aba-lances').hidden;

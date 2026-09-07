@@ -147,3 +147,51 @@ test('sincronizar o relógio com o Placar PRO não mexe na posse de bola', () =>
   assert.notEqual(golDepois.minuto, semAjuste.eventos.find((e) => e.type === 'escanteio').minuto,
     'mas o rótulo de minuto tem que acompanhar o ajuste');
 });
+
+/*
+ * A posse é a única linha do comparativo que tem número mesmo sem ninguém
+ * marcar nada: sem posse medida a conta cai no padrão 50/50. Estes testes
+ * existem porque esse padrão já vazou para o ar uma vez — `posse.medida` era
+ * calculado e nenhum lugar lia.
+ */
+
+const rotulos = (eventos, agora) =>
+  stats.linhasComparativas(stats.derivar(eventos, esporte, agora)).map((l) => l.rotulo);
+
+test('sem nenhuma marcação de posse, a linha de posse não vai ao ar', () => {
+  const semPosse = [
+    ev(0, 'periodo', null, {}),
+    ev(0, 'relogio', null, { acao: 'iniciar' }),
+    ev(120_000, 'finalizacao', 'casa', { desfecho: 'no_gol' }),
+    ev(300_000, 'escanteio', 'fora')
+  ];
+
+  const d = stats.derivar(semPosse, esporte, 600_000);
+  assert.equal(d.posse.medida, false);
+  assert.equal(d.posse.casa, 50, 'o 50/50 continua existindo no estado…');
+  assert.ok(!rotulos(semPosse, 600_000).includes('Posse de bola'), '…mas não pode chegar na tela');
+});
+
+test('uma marcação solta no fim do tempo não vira 100% no ar', () => {
+  // Uma única batida aos 44' credita todo o resto a um time. A conta fica
+  // 100% × 0% — indistinguível de um jogo inteiramente dominado.
+  const umaBatida = [
+    ev(0, 'periodo', null, {}),
+    ev(0, 'relogio', null, { acao: 'iniciar' }),
+    ev(2_640_000, 'posse', 'casa')   // 44'
+  ];
+  const agora = 2_700_000;           // 45'
+
+  const d = stats.derivar(umaBatida, esporte, agora);
+  assert.equal(d.posse.casa, 100, 'a conta crua realmente dá 100%');
+  assert.ok(d.posse.cobertura < 0.05, 'mas só 1 minuto dos 45 foi observado');
+  assert.equal(d.posse.medida, false);
+  assert.ok(!rotulos(umaBatida, agora).includes('Posse de bola'));
+});
+
+test('jogo acompanhado de verdade mantém a posse no ar', () => {
+  const d = stats.derivar(JOGO, esporte, AGORA);
+  assert.ok(d.posse.cobertura > 0.25, `cobertura ficou ${d.posse.cobertura}`);
+  assert.equal(d.posse.medida, true);
+  assert.equal(rotulos(JOGO, AGORA)[0], 'Posse de bola', 'e continua sendo a primeira linha');
+});
