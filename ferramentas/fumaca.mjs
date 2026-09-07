@@ -63,12 +63,19 @@ async function main() {
   const trabalho = fs.mkdtempSync(path.join(os.tmpdir(), 'dustats-fumaca-'));
 
   const processo = spawn(process.execPath, [ALVO], {
-    cwd: trabalho,
+    // A pasta de trabalho NÃO é a temporária de propósito: no Windows não se
+    // apaga um diretório que é o cwd de um processo, e a limpeza no fim
+    // falharia com EBUSY. Quem isola os dados é o DUSTATS_DADOS.
+    cwd: RAIZ,
     // Sem isto o servidor carregaria a partida salva na máquina e o gol deste
     // teste somaria ao placar que já estava lá.
     env: { ...process.env, PORT: String(PORTA), DUSTATS_ABRIR: '0', DUSTATS_DADOS: trabalho },
     stdio: ['ignore', 'pipe', 'pipe']
   });
+
+  // `kill()` só pede o encerramento; no Windows os arquivos continuam
+  // travados até o processo realmente morrer.
+  const morreu = new Promise((resolve) => processo.once('exit', resolve));
 
   let saida = '';
   processo.stdout.on('data', (d) => { saida += d; });
@@ -118,7 +125,14 @@ async function main() {
     if (!salvou) falhas.push('a pasta de partidas não foi criada');
   } finally {
     processo.kill();
-    fs.rmSync(trabalho, { recursive: true, force: true });
+    await Promise.race([morreu, espera(5000)]);
+    try {
+      fs.rmSync(trabalho, { recursive: true, force: true });
+    } catch {
+      // Sobrar pasta temporária não é motivo para reprovar a fumaça: o sistema
+      // limpa sozinho, e reprovar aqui esconderia que TODAS as checagens
+      // passaram — foi exatamente o que aconteceu na primeira CI do Windows.
+    }
   }
 
   if (falhas.length > 0) {
