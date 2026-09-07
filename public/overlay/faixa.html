@@ -27,10 +27,30 @@
     box-shadow: var(--sombra);
     overflow: hidden;
     opacity: 0;
-    transform: translateX(-70px);
-    transition: opacity 340ms ease, transform 520ms cubic-bezier(.22, 1, .36, 1);
+    transform: translateX(-64px);
+    /* Entrada e saída com tempos DIFERENTES, cada um declarado no estado de
+       destino. Peça de transmissão entra com calma e sai rápido: a entrada é
+       um convite a olhar, a saída não pode roubar atenção da jogada. */
+    transition: opacity 200ms ease-in, transform 240ms ease-in;
+    will-change: transform, opacity;
   }
-  #faixa.no-ar { opacity: 1; transform: none; }
+  #faixa.no-ar {
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity 300ms ease-out,
+      transform 620ms cubic-bezier(.16, 1, .3, 1);
+  }
+
+  /* Troca de estatística com a faixa já no ar: o conteúdo pisca de leve em vez
+     de mudar de uma vez, senão os números trocam com um estalo. */
+  .conteudo-faixa {
+    transition: opacity 130ms ease, transform 130ms ease;
+  }
+  #faixa.trocando .conteudo-faixa {
+    opacity: 0;
+    transform: translateY(6px);
+  }
 
   #faixa::before {
     content: '';
@@ -94,6 +114,7 @@
 <body class="overlay">
 
 <div id="faixa">
+ <div class="conteudo-faixa">
   <div class="rotulo-faixa"><span id="rotulo"></span></div>
   <div class="linha-faixa">
     <span class="time-faixa casa" style="--cor: var(--cor-casa)"><i></i><span id="siglaCasa"></span></span>
@@ -105,6 +126,7 @@
     <span class="valor-faixa dir num" id="valorFora"></span>
     <span class="time-faixa fora" style="--cor: var(--cor-fora)"><i></i><span id="siglaFora"></span></span>
   </div>
+ </div>
 </div>
 
 <script src="/shared/bus.js"></script>
@@ -136,10 +158,11 @@ let ultimoDisparo = 0;
 
 function esconder() {
   faixa.classList.remove('no-ar');
+  faixa.classList.remove('trocando');
   clearTimeout(temporizador);
 }
 
-function mostrar(linha, estado) {
+function preencher(linha, estado) {
   document.getElementById('rotulo').textContent = linha.rotulo;
   document.getElementById('siglaCasa').textContent = overlay.sigla(estado.config, 'casa');
   document.getElementById('siglaFora').textContent = overlay.sigla(estado.config, 'fora');
@@ -160,12 +183,27 @@ function mostrar(linha, estado) {
 
   document.getElementById('barraCasa').style.width = `${fatiaCasa}%`;
   document.getElementById('barraFora').style.width = `${100 - fatiaCasa}%`;
+}
 
-  faixa.classList.add('no-ar');
-  // Um segundo disparo durante a animação troca o conteúdo e reinicia a
-  // contagem, em vez de empilhar uma faixa em cima da outra.
+function mostrar(linha, estado, restanteMs = DURACAO) {
+  const jaNoAr = faixa.classList.contains('no-ar');
   clearTimeout(temporizador);
-  temporizador = setTimeout(esconder, DURACAO);
+
+  if (!jaNoAr) {
+    preencher(linha, estado);
+    faixa.classList.add('no-ar');
+    temporizador = setTimeout(esconder, restanteMs);
+    return;
+  }
+
+  // Já estava no ar: some com o conteúdo, troca por baixo e traz de volta.
+  // A moldura não se mexe — só o miolo — então a peça não pisca inteira.
+  faixa.classList.add('trocando');
+  setTimeout(() => {
+    preencher(linha, estado);
+    faixa.classList.remove('trocando');
+  }, 140);
+  temporizador = setTimeout(esconder, restanteMs);
 }
 
 DuStats.aoEstado((estado) => {
@@ -179,13 +217,15 @@ DuStats.aoEstado((estado) => {
   if (pedido.em === ultimoDisparo) return;
   ultimoDisparo = pedido.em;
 
-  // Um disparo antigo, reaproveitado de um snapshot na hora que o overlay
-  // abriu, não pode subir ao ar sozinho.
-  if (DuStats.agoraServidor() - pedido.em > DURACAO) return;
+  // Se o OBS recarregar a fonte no meio, a faixa volta pelo tempo que RESTAVA,
+  // não por 10 s novos — senão um refresh esticaria o tempo no ar. E um disparo
+  // já vencido, que só chegou junto com o snapshot de abertura, fica de fora.
+  const restante = DURACAO - (DuStats.agoraServidor() - pedido.em);
+  if (restante <= 250) return;
 
   const linha = (estado.comparativo || []).find((l) => l.rotulo === pedido.rotulo);
   if (!linha) return; // estatística que ainda não existe neste jogo
-  mostrar(linha, estado);
+  mostrar(linha, estado, restante);
 });
 </script>
 </body>

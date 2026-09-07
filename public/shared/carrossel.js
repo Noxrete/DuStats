@@ -12,6 +12,15 @@
     { nome: 'Gols e cartões', desenhar: () => global.DuStats.paineis.linhaDoTempo }
   ];
 
+  /** Troca o texto com um respiro, em vez de estalar de um para o outro. */
+  function trocarTexto(elemento, texto) {
+    elemento.classList.add('trocando');
+    setTimeout(() => {
+      elemento.textContent = texto;
+      elemento.classList.remove('trocando');
+    }, 150);
+  }
+
   function iniciar({ modo, painel, titulo }) {
     let slideNoAr = null;
     let assinaturaAtual = null;
@@ -33,11 +42,23 @@
       if (!forcar && slide === slideNoAr && nova === assinaturaAtual) return;
 
       const trocouDeSlide = slide !== slideNoAr;
+      const assinaturaAnterior = assinaturaAtual;
       slideNoAr = slide;
       assinaturaAtual = nova;
 
-      painel.querySelector('[data-cabecalho]').innerHTML =
-        global.DuStats.paineis.cabecalho(estado, `${titulo(estado)} · ${SLIDES[slide].nome}`);
+      // O cabeçalho só é reconstruído quando os DADOS mudam. Trocar de slide
+      // mexe apenas no subtítulo: refazer o HTML inteiro destruía e recriava
+      // escudos e placar a cada 12 segundos, sem necessidade.
+      const cabecalho = painel.querySelector('[data-cabecalho]');
+      const subtitulo = `${titulo(estado)} · ${SLIDES[slide].nome}`;
+      const precisaRefazer = forcar || nova !== assinaturaAnterior || !cabecalho.firstElementChild;
+
+      if (precisaRefazer) {
+        cabecalho.innerHTML = global.DuStats.paineis.cabecalho(estado, subtitulo);
+      } else {
+        const alvo = cabecalho.querySelector('.subtitulo');
+        if (alvo && alvo.textContent !== subtitulo) trocarTexto(alvo, subtitulo);
+      }
 
       painel.querySelectorAll('.slide').forEach((secao, indice) => {
         const ativo = indice === slide;

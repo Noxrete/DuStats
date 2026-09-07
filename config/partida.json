@@ -1,20 +1,18 @@
 {
-  "competicao": "Campeonato Amador",
+  "competicao": "Mudou por fora",
   "rodada": "",
-  "local": "",
-  "acento": "#17b64a",
+  "local": "Campo do Bairro",
   "casa": {
-    "nome": "Time da Casa",
-    "sigla": "CAS",
+    "nome": "Grêmio da Vila ção",
+    "sigla": "GRV",
     "cor": "#1f6feb",
-    "corTexto": "#ffffff",
-    "escudo": ""
+    "corTexto": "#ffffff"
   },
   "fora": {
-    "nome": "Time Visitante",
-    "sigla": "VIS",
+    "nome": "Atlético Serrano",
+    "sigla": "ATS",
     "cor": "#d92d20",
-    "corTexto": "#ffffff",
-    "escudo": ""
-  }
+    "corTexto": "#ffffff"
+  },
+  "acento": "#17b64a"
 }

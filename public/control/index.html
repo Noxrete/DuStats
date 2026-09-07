@@ -48,7 +48,19 @@
     font-weight: 700; font-size: 15px; text-transform: uppercase;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .placar .lado .gols { margin-left: auto; font-size: 30px; font-weight: 700; line-height: 1; }
+  .placar .lado .gols {
+    margin-left: auto; font-size: 30px; font-weight: 700; line-height: 1;
+    display: inline-block;
+  }
+  /* O placar dá um pulo quando muda: confirma o gol para quem registrou sem
+     olhar para a tela. */
+  .placar .lado .gols.pulou { animation: pularPlacar 520ms cubic-bezier(.16, 1, .3, 1); }
+
+  @keyframes pularPlacar {
+    0%   { transform: scale(1); }
+    28%  { transform: scale(1.5); color: var(--acento); }
+    100% { transform: scale(1); }
+  }
 
   button {
     font-family: inherit; color: inherit; border: 0;
@@ -56,9 +68,15 @@
     padding: 14px 10px; font-size: 15px; font-weight: 700;
     letter-spacing: .03em; text-transform: uppercase;
     cursor: pointer; touch-action: manipulation;
-    transition: transform 90ms ease, filter 120ms ease;
+    transition: transform 220ms cubic-bezier(.16, 1, .3, 1), filter 220ms ease;
   }
-  button:active { transform: scale(.965); filter: brightness(1.35); }
+  /* Afundar é instantâneo e voltar é suave: o dedo precisa da resposta no
+     mesmo instante, mas o repique lento é o que dá sensação de peça física. */
+  button:active {
+    transform: scale(.955);
+    filter: brightness(1.4);
+    transition-duration: 0ms;
+  }
   button[disabled] { opacity: .4; }
 
   .b-fantasma { background: rgba(0, 0, 0, .28); border: 1px solid var(--navy-borda); }
@@ -75,6 +93,10 @@
   .posse button {
     padding: 16px 6px; font-size: 15px;
     background: var(--navy-claro); border: 2px solid transparent;
+    transition:
+      background 260ms ease,
+      border-color 200ms ease,
+      transform 220ms cubic-bezier(.16, 1, .3, 1);
   }
   .posse button[aria-pressed="true"] { border-color: #fff; }
   .posse .casa[aria-pressed="true"] { background: var(--cor-casa); color: var(--texto-casa); }
@@ -116,6 +138,27 @@
     display: flex; align-items: center; gap: 10px;
     background: rgba(0, 0, 0, .3); border-radius: 4px; padding: 9px 10px; font-size: 14px;
     border-left: 4px solid var(--cor, #333);
+  }
+  .ultimos li.novo { animation: lanceEntrando 460ms cubic-bezier(.16, 1, .3, 1) both; }
+
+  @keyframes lanceEntrando {
+    from { opacity: 0; transform: translateY(-12px); background: rgba(23, 182, 74, .28); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* Trocar de aba com um respiro, em vez de o conteúdo estalar na tela. */
+  .aba:not([hidden]) { animation: abaEntrando 240ms ease-out both; }
+
+  @keyframes abaEntrando {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ultimos li.novo,
+    .aba:not([hidden]),
+    .placar .lado .gols.pulou { animation-duration: 1ms; }
+    button { transition-duration: 1ms; }
   }
   .ultimos .min { font-weight: 700; min-width: 40px; }
   .ultimos .apagar { margin-left: auto; background: none; padding: 4px 8px; font-size: 18px; opacity: .5; }

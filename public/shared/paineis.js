@@ -55,15 +55,18 @@
   function comparativo(container, estado) {
     const linhas = estado.comparativo;
 
-    container.innerHTML = `<div class="comparativo">${linhas.map((linha) => {
+    container.innerHTML = `<div class="comparativo">${linhas.map((linha, indice) => {
       const total = linha.casa + linha.fora;
       const fatiaCasa = total > 0 ? (linha.casa / total) * 100 : 50;
       const sufixo = linha.sufixo || '';
       const lider = !linha.destacar || linha.casa === linha.fora
         ? '' : (linha.casa > linha.fora ? 'casa' : 'fora');
 
+      // O índice vira o atraso da entrada: as linhas descem em cascata em vez
+      // de aparecerem as nove de uma vez, que é o que separa "tabela na tela"
+      // de "gráfico entrando no ar".
       return `
-        <div class="linha-comp">
+        <div class="linha-comp" style="--ordem: ${indice}">
           <div class="valor esq num ${lider === 'casa' ? 'lider-casa' : ''}">${linha.casa}${sufixo}</div>
           <div>
             <div class="rotulo-linha">${linha.rotulo}</div>
@@ -101,7 +104,7 @@
     const { overlay, campo } = global.DuStats;
 
     container.innerHTML = `<div class="mapas">${['casa', 'fora'].map((lado) => `
-      <div class="mapa" data-lado="${lado}">
+      <div class="mapa" data-lado="${lado}" style="--ordem: ${lado === 'casa' ? 0 : 1}">
         <div class="mapa-topo">
           ${overlay.escudo(estado.config, lado)}
           <span class="mapa-nome">${overlay.nome(estado.config, lado)}</span>

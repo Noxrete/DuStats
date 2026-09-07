@@ -341,13 +341,39 @@ $('#btSincronizar').addEventListener('click', () => {
 
 // -------------------------------------------------------------- ajustes
 
+/**
+ * Reflete a configuração atual nos campos.
+ *
+ * Roda a cada estado, e não só uma vez, porque a config muda por fora: outro
+ * aparelho editando, ou uma partida nova. Sem isto os campos ficavam velhos —
+ * e, pior, editar UM campo reenviava TODOS, sobrescrevendo a config nova com a
+ * antiga que estava na tela.
+ *
+ * O campo em foco é pulado: quem está digitando não pode ter o texto trocado
+ * debaixo do dedo.
+ */
+function preencherAjustes(estado) {
+  const definir = (seletor, valor) => {
+    const campo = $(seletor);
+    if (!campo || campo === document.activeElement) return;
+    if (campo.value !== valor) campo.value = valor;
+  };
+
+  definir('#cfgCompeticao', estado.config.competicao || '');
+  definir('#cfgLocal', estado.config.local || '');
+  definir('#cfgAcento', estado.config.acento || '#17b64a');
+
+  for (const lado of ['casa', 'fora']) {
+    definir(`#nome-${lado}`, estado.config[lado]?.nome || '');
+    definir(`#sigla-${lado}`, estado.config[lado]?.sigla || '');
+    definir(`#cor-${lado}`, estado.config[lado]?.cor || '#1f6feb');
+  }
+}
+
 function montarAjustes(estado) {
   if ($('#cartaoTimes').dataset.montado === 'sim') return;
   $('#cartaoTimes').dataset.montado = 'sim';
 
-  $('#cfgCompeticao').value = estado.config.competicao || '';
-  $('#cfgLocal').value = estado.config.local || '';
-  $('#cfgAcento').value = estado.config.acento || '#17b64a';
   for (const campo of ['cfgCompeticao', 'cfgLocal', 'cfgAcento']) {
     $(`#${campo}`).addEventListener('change', () => {
       DuStats.salvarConfig({
@@ -438,6 +464,50 @@ function rotuloDoEvento(evento) {
   return `${descricaoDoEvento(evento)} ${evento.minuto}'`;
 }
 
+/**
+ * Lista dos últimos lances.
+ *
+ * Fica separada porque tem uma saída antecipada: quando nada mudou, ela não
+ * redesenha. Dentro da `renderizar` esse `return` cortava tudo o que vinha
+ * depois — inclusive o preenchimento dos Ajustes.
+ */
+function desenharUltimos(estado) {
+  const visiveis = estado.ultimos
+    .filter((e) => !['posse', 'relogio', 'periodo', 'acrescimo'].includes(e.type))
+    .slice(0, 12);
+
+  // O servidor pulsa a cada 2 s com o relógio correndo. Refazer a lista a cada
+  // pulso a fazia piscar e jogava o rolamento para o topo enquanto o apontador
+  // procurava um lance para apagar.
+  const assinatura = visiveis.map((e) => e.id).join(',');
+  const lista = $('#listaUltimos');
+  if (lista.dataset.assinatura === assinatura) return;
+
+  const primeiroDesenho = lista.dataset.assinatura === undefined;
+  const conhecidos = new Set((lista.dataset.assinatura || '').split(','));
+  lista.dataset.assinatura = assinatura;
+
+  lista.innerHTML = '';
+  for (const evento of visiveis) {
+    const item = document.createElement('li');
+    // Só o lance NOVO entra animado: é a confirmação visual de que o toque
+    // pegou, para quem está de olho no campo e não na tela.
+    if (!primeiroDesenho && !conhecidos.has(evento.id)) item.classList.add('novo');
+    item.style.setProperty('--cor', evento.team ? `var(--cor-${evento.team})` : '#333');
+    item.innerHTML = `<span class="min num">${evento.minuto}'</span><span>${escapar(descricaoDoEvento(evento))}</span>`;
+    const apagar = document.createElement('button');
+    apagar.className = 'apagar';
+    apagar.textContent = '✕';
+    apagar.title = 'Apagar este lance';
+    apagar.addEventListener('click', async () => {
+      if (!confirm(`Apagar "${rotuloDoEvento(evento)}"?`)) return;
+      await DuStats.apagar(evento.id);
+    });
+    item.appendChild(apagar);
+    lista.appendChild(item);
+  }
+}
+
 function renderizar(estado) {
   ultimoEstado = estado;
 
@@ -445,8 +515,16 @@ function renderizar(estado) {
   $('#nomeFora').textContent = estado.config.fora?.nome || 'Visitante';
   $('#tituloCasa').textContent = estado.config.casa?.nome || 'Casa';
   $('#tituloFora').textContent = estado.config.fora?.nome || 'Visitante';
-  $('#golsCasa').textContent = estado.placar.casa;
-  $('#golsFora').textContent = estado.placar.fora;
+  for (const [lado, valor] of [['Casa', estado.placar.casa], ['Fora', estado.placar.fora]]) {
+    const alvo = $(`#gols${lado}`);
+    if (alvo.textContent !== String(valor)) {
+      alvo.textContent = valor;
+      // Reinicia a animação mesmo se ela já estiver rodando.
+      alvo.classList.remove('pulou');
+      void alvo.offsetWidth;
+      alvo.classList.add('pulou');
+    }
+  }
   $('#periodo').textContent = estado.relogio.periodoNome
     + (estado.relogio.acrescimoMin ? ` · +${estado.relogio.acrescimoMin}` : '');
 
@@ -467,23 +545,7 @@ function renderizar(estado) {
   desfazer.hidden = !estado.paraDesfazer || !naAbaLances;
   if (estado.paraDesfazer) $('#alvoDesfazer').textContent = rotuloDoEvento(estado.paraDesfazer);
 
-  const lista = $('#listaUltimos');
-  lista.innerHTML = '';
-  for (const evento of estado.ultimos.filter((e) => !['posse', 'relogio', 'periodo', 'acrescimo'].includes(e.type)).slice(0, 12)) {
-    const item = document.createElement('li');
-    item.style.setProperty('--cor', evento.team ? `var(--cor-${evento.team})` : '#333');
-    item.innerHTML = `<span class="min num">${evento.minuto}'</span><span>${escapar(descricaoDoEvento(evento))}</span>`;
-    const apagar = document.createElement('button');
-    apagar.className = 'apagar';
-    apagar.textContent = '✕';
-    apagar.title = 'Apagar este lance';
-    apagar.addEventListener('click', async () => {
-      if (!confirm(`Apagar "${rotuloDoEvento(evento)}"?`)) return;
-      await DuStats.apagar(evento.id);
-    });
-    item.appendChild(apagar);
-    lista.appendChild(item);
-  }
+  desenharUltimos(estado);
 
   for (const botao of $$('.ar .modos button')) {
     botao.setAttribute('aria-pressed', String(botao.dataset.modo === estado.transmissao.modo));
@@ -498,6 +560,7 @@ function renderizar(estado) {
   }
 
   montarAjustes(estado);
+  preencherAjustes(estado);
 }
 
 DuStats.aoEstado(renderizar);
