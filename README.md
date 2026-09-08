@@ -292,6 +292,34 @@ No mesmo cartão sai um QR com o endereço do painel. O endereço vem do servido
 não do navegador: quem abre no PC do OBS abre em `localhost`, e um QR de
 `localhost` manda o celular para o próprio celular.
 
+## Aparência no ar
+
+Cinco skins, escolhidas por partida na aba **Ajustes**, ao lado da cor da
+transmissão:
+
+| Skin | A ideia |
+|---|---|
+| **Placar** | a original, casada com o overlay do Placar PRO |
+| **Vidro** | material — lâmina translúcida que pousa sobre o vídeo |
+| **Traço** | ausência — só filetes e tipografia, sem painel |
+| **Bandeira** | clube — a cor da transmissão vira estrutura, não detalhe |
+| **Estádio** | luz — quase preto, com aresta de neon acendendo |
+
+Para comparar antes de entrar no ar: **`/overlay/skins.html`**. Desenha as peças
+de verdade — o mesmo `paineis.js` e o mesmo `faixa.css` que vão para o OBS —
+sobre grama de dia e de noite, com um retângulo no canto representando o Placar
+PRO. Não carrega o `bus.js`: não fala com o servidor e não toca na partida
+salva.
+
+A skin vale para a faixa, o painel do intervalo, o resumo pós-jogo e o card do
+Instagram. Nos três primeiros ela é CSS; no card é canvas, então cada skin tem
+seus pintores em `public/shared/cartao.js`.
+
+Vidro fosco de verdade não existe aqui, e não por preguiça: `backdrop-filter`
+desfoca o que está atrás do elemento **dentro da página**, e no OBS a Fonte de
+Navegador é uma camada separada com fundo transparente. O vídeo não está na
+página. A skin Vidro simula o efeito.
+
 ## Dois apontadores
 
 Posse de bola é uma batida a cada troca de bola — mais que todos os outros

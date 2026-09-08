@@ -31,6 +31,149 @@
   const NAVY_BASE = '#0b1130';
   const NAVY_BLOCO = 'rgba(0, 0, 0, .3)';
 
+  /**
+   * A skin do card.
+   *
+   * Nos overlays a skin é CSS; aqui não dá — isto é canvas, e o navegador não
+   * aplica folha de estilo em pixel desenhado à mão. O jeito de não espalhar
+   * `if (skin === ...)` por trinta linhas de desenho é este: cada skin devolve
+   * as MESMAS chaves, e `desenhar()` só consulta.
+   *
+   * Uma diferença importante em relação aos overlays: o card é um PNG, não tem
+   * vídeo por trás. Skins que lá vivem de translucidez (Vidro) ou de ausência
+   * de fundo (Traço) precisam aqui de uma tradução, não de uma cópia — senão
+   * viram um retângulo escuro sem graça.
+   */
+  function paletaDaSkin(skin, acento, acentoEscuro) {
+    const gradiente = (ctx, paradas) => {
+      const g = ctx.createLinearGradient(0, 0, 0, LADO);
+      for (const [pos, cor] of paradas) g.addColorStop(pos, cor);
+      return g;
+    };
+
+    const skins = {
+      placar: {
+        textoFraco: '#93a0c4',
+        bloco: NAVY_BLOCO,
+        trilho: 'rgba(0,0,0,.34)',
+        divisor: 'rgba(255,255,255,.14)',
+        fundo(ctx) {
+          ctx.fillStyle = gradiente(ctx, [[0, NAVY_TOPO], [0.5, '#141d45'], [1, NAVY_BASE]]);
+          ctx.fillRect(0, 0, LADO, LADO);
+        },
+        faixaTopo(ctx) {
+          caixa(ctx, 0, 0, LADO * 0.26, 10, 0, acento);
+          caixa(ctx, LADO * 0.26, 0, LADO * 0.74, 10, 0, 'rgba(255,255,255,.85)');
+        }
+      },
+
+      // Claro e arejado, com um facho de luz atravessando: é o que sobra da
+      // ideia de lâmina translúcida quando não há vídeo para atravessar.
+      vidro: {
+        textoFraco: '#cdd6ea',
+        bloco: 'rgba(255,255,255,.08)',
+        trilho: 'rgba(0,0,0,.28)',
+        divisor: 'rgba(255,255,255,.20)',
+        fundo(ctx) {
+          ctx.fillStyle = gradiente(ctx, [[0, '#243055'], [0.45, '#18224a'], [1, '#0d1330']]);
+          ctx.fillRect(0, 0, LADO, LADO);
+          const facho = ctx.createLinearGradient(0, 0, LADO, LADO);
+          facho.addColorStop(0, 'rgba(255,255,255,.16)');
+          facho.addColorStop(0.42, 'rgba(255,255,255,.03)');
+          facho.addColorStop(0.75, 'rgba(255,255,255,0)');
+          ctx.fillStyle = facho;
+          ctx.fillRect(0, 0, LADO, LADO);
+        },
+        faixaTopo(ctx) {
+          caixa(ctx, 0, 0, LADO * 0.14, 3, 0, acento);
+          caixa(ctx, LADO * 0.14, 0, LADO * 0.86, 3, 0, 'rgba(255,255,255,.5)');
+        }
+      },
+
+      // Sem blocos e sem faixa: só o fundo mais escuro possível e os filetes.
+      traco: {
+        textoFraco: 'rgba(255,255,255,.72)',
+        bloco: 'rgba(255,255,255,.04)',
+        trilho: 'rgba(255,255,255,.16)',
+        divisor: 'rgba(255,255,255,.28)',
+        fundo(ctx) {
+          ctx.fillStyle = '#05070f';
+          ctx.fillRect(0, 0, LADO, LADO);
+        },
+        faixaTopo() { /* a ausência de faixa é o ponto desta skin */ }
+      },
+
+      bandeira: {
+        textoFraco: '#b9c6e4',
+        bloco: 'rgba(0,0,0,.42)',
+        trilho: 'rgba(0,0,0,.4)',
+        divisor: 'rgba(255,255,255,.14)',
+        fundo(ctx) {
+          ctx.fillStyle = gradiente(ctx, [[0, '#16204a'], [0.5, '#0e1533'], [1, '#0a1024']]);
+          ctx.fillRect(0, 0, LADO, LADO);
+
+          // O campo diagonal só no terço de cima, pela mesma razão do overlay:
+          // atravessando tudo, ele põe o vermelho do time da casa sobre verde.
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(LADO * 0.62, 0);
+          ctx.lineTo(LADO * 0.34, LADO * 0.33);
+          ctx.lineTo(0, LADO * 0.33);
+          ctx.closePath();
+          ctx.clip();
+          const campo = ctx.createLinearGradient(0, 0, LADO * 0.62, LADO * 0.38);
+          campo.addColorStop(0, acento);
+          campo.addColorStop(1, acentoEscuro);
+          ctx.globalAlpha = 0.38;
+          ctx.fillStyle = campo;
+          ctx.fillRect(0, 0, LADO, LADO * 0.33);
+          ctx.restore();
+
+          caixa(ctx, 0, 0, 8, LADO, 0, acento);   // a aresta do clube
+        },
+        faixaTopo(ctx) { caixa(ctx, 0, 0, LADO, 6, 0, acento); }
+      },
+
+      estadio: {
+        textoFraco: '#7c8ba8',
+        bloco: 'rgba(255,255,255,.04)',
+        trilho: 'rgba(255,255,255,.05)',
+        divisor: 'rgba(255,255,255,.10)',
+        fundo(ctx) {
+          ctx.fillStyle = gradiente(ctx, [[0, '#0c111c'], [1, '#05070d']]);
+          ctx.fillRect(0, 0, LADO, LADO);
+
+          const holofote = ctx.createRadialGradient(LADO / 2, LADO * 0.30, 0, LADO / 2, LADO * 0.30, LADO * 0.62);
+          holofote.addColorStop(0, 'rgba(255,255,255,.09)');
+          holofote.addColorStop(1, 'rgba(255,255,255,0)');
+          ctx.fillStyle = holofote;
+          ctx.fillRect(0, 0, LADO, LADO);
+
+          // A aresta de neon, por dentro da borda para o brilho não ser cortado.
+          ctx.save();
+          ctx.strokeStyle = acento;
+          ctx.lineWidth = 2;
+          ctx.shadowColor = acento;
+          ctx.shadowBlur = 26;
+          ctx.strokeRect(1, 1, LADO - 2, LADO - 2);
+          ctx.restore();
+        },
+        faixaTopo(ctx) {
+          ctx.save();
+          ctx.shadowColor = acento;
+          ctx.shadowBlur = 18;
+          caixa(ctx, 0, 0, LADO, 4, 0, acento);
+          ctx.restore();
+        }
+      }
+    };
+
+    // Skin desconhecida cai no padrão: um post é publicado e não dá para
+    // desfazer, então nunca sai um card sem estilo nenhum.
+    return skins[skin] || skins.placar;
+  }
+
   function escreve(ctx, texto, x, y, { tamanho = 32, peso = 400, cor = '#fff', alinha = 'center', espaco = 0 }) {
     ctx.save();
     ctx.font = `${peso} ${tamanho}px ${FONTE}`;
@@ -90,28 +233,22 @@
     const corFora = corDoTime(estado.config, 'fora', '#d92d20');
 
     const acento = estado.config?.acento || '#17b64a';
+    const pele = paletaDaSkin(estado.config?.skin, acento, global.DuStats.escurecer(acento));
 
-    const fundo = ctx.createLinearGradient(0, 0, 0, LADO);
-    fundo.addColorStop(0, NAVY_TOPO);
-    fundo.addColorStop(0.5, '#141d45');
-    fundo.addColorStop(1, NAVY_BASE);
-    ctx.fillStyle = fundo;
-    ctx.fillRect(0, 0, LADO, LADO);
-
-    // A faixa do topo — acento da transmissão à esquerda, branco no resto.
-    // É a mesma assinatura de forma do painel e da faixa do rodapé.
-    caixa(ctx, 0, 0, LADO * 0.26, 10, 0, acento);
-    caixa(ctx, LADO * 0.26, 0, LADO * 0.74, 10, 0, 'rgba(255,255,255,.85)');
+    pele.fundo(ctx);
+    // A faixa do topo é assinatura de forma, e cada skin assina do seu jeito —
+    // a Traço, por exemplo, assina não desenhando nada.
+    pele.faixaTopo(ctx);
 
     const cabecalho = [estado.config.competicao, estado.config.local].filter(Boolean).join('  ·  ');
-    escreve(ctx, cabecalho.toUpperCase(), LADO / 2, 82, { tamanho: 25, cor: '#93a0c4', espaco: 4 });
+    escreve(ctx, cabecalho.toUpperCase(), LADO / 2, 82, { tamanho: 25, cor: pele.textoFraco, espaco: 4 });
 
     // --------------------------------------------------------------- placar
     await desenharEscudo(ctx, estado, 'casa', 168, 208, 128);
     await desenharEscudo(ctx, estado, 'fora', LADO - 168, 208, 128);
 
     // Bloco do placar num tom próprio, como o "2 x 0" do overlay do placar.
-    caixa(ctx, LADO / 2 - 170, 112, 340, 150, 8, NAVY_BLOCO);
+    caixa(ctx, LADO / 2 - 170, 112, 340, 150, 8, pele.bloco);
     escreve(ctx, `${estado.placar.casa}`, LADO / 2 - 88, 240, { tamanho: 132, peso: 700 });
     escreve(ctx, '×', LADO / 2, 228, { tamanho: 58, cor: 'rgba(255,255,255,.3)' });
     escreve(ctx, `${estado.placar.fora}`, LADO / 2 + 88, 240, { tamanho: 132, peso: 700 });
@@ -133,11 +270,11 @@
 
       escreve(ctx, `${linha.casa}${sufixo}`, 150, y + 26, { tamanho: 38, peso: 700, alinha: 'right' });
       escreve(ctx, `${linha.fora}${sufixo}`, LADO - 150, y + 26, { tamanho: 38, peso: 700, alinha: 'left' });
-      escreve(ctx, linha.rotulo.toUpperCase(), LADO / 2, y + 8, { tamanho: 19, cor: '#93a0c4', espaco: 2.5 });
+      escreve(ctx, linha.rotulo.toUpperCase(), LADO / 2, y + 8, { tamanho: 19, cor: pele.textoFraco, espaco: 2.5 });
 
       const barraX = 178;
       const barraL = LADO - barraX * 2;
-      caixa(ctx, barraX, y + 22, barraL, 11, 6, 'rgba(0,0,0,.34)');
+      caixa(ctx, barraX, y + 22, barraL, 11, 6, pele.trilho);
       caixa(ctx, barraX, y + 22, barraL * fatia, 11, 6, corCasa);
       caixa(ctx, barraX + barraL * fatia, y + 22, barraL * (1 - fatia), 11, 6, corFora);
     });
@@ -145,7 +282,7 @@
     // ----------------------------------------------------------------- gols
     const gols = estado.linhaDoTempo.filter((i) => i.tipo === 'gol');
     if (gols.length > 0) {
-      caixa(ctx, 100, 812, LADO - 200, 2, 1, 'rgba(255,255,255,.14)');
+      caixa(ctx, 100, 812, LADO - 200, 2, 1, pele.divisor);
       // Marca de acento ao lado do título, no desenho do chip verde do placar.
       caixa(ctx, LADO / 2 - 66, 848, 5, 20, 2, acento);
       escreve(ctx, 'GOLS', LADO / 2 + 6, 865, { tamanho: 20, cor: '#fff', espaco: 3 });

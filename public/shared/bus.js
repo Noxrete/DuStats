@@ -191,6 +191,10 @@
     conectado: () => conectado && !ultimoEnvioFalhou,
     pendentes: () => lerFila().length,
     agoraServidor: () => Date.now() + skew,
+    // Exposta porque o card do Instagram precisa do mesmo tom de apoio do
+    // acento. Duplicar a conta lá levaria os dois a divergirem no dia em que
+    // alguém mexesse no fator.
+    escurecer,
 
     /** Enfileira um lance. Devolve na hora — o envio é assíncrono e resiliente. */
     registrar(evento) {
