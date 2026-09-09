@@ -126,6 +126,13 @@
   .checagens .falta .marca { color: #ff8b6b; }
   .checagens .falta .nome { color: #ffd9cf; }
   .checagens .alerta .marca { color: #ffcc55; }
+  /* Aviso de cor mostra as cores. Dizer "parecidas demais" sem elas obriga o
+     operador a abrir os dois seletores para descobrir de quais se trata. */
+  .checagens .amostra {
+    display: inline-block; width: 11px; height: 11px; margin-left: 6px;
+    border-radius: 50%; vertical-align: baseline;
+    border: 1px solid rgba(255, 255, 255, .35);
+  }
 
   select {
     width: 100%; padding: 12px 10px; margin-bottom: 4px;
@@ -564,6 +571,7 @@
 <script src="/shared/relogio.js"></script>
 <script src="/shared/campo.js"></script>
 <script src="/shared/qr.js"></script>
+<script src="/shared/conferencia.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

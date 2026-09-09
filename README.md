@@ -292,6 +292,20 @@ No mesmo cartão sai um QR com o endereço do painel. O endereço vem do servido
 não do navegador: quem abre no PC do OBS abre em `localhost`, e um QR de
 `localhost` manda o celular para o próprio celular.
 
+A lista responde ainda uma segunda pergunta, que não é sobre fiação: **é o jogo
+certo?** O DuStats reabre a partida onde parou — o que é o certo quando o
+servidor cai no meio do jogo e é exatamente o errado no domingo seguinte. Então
+ela avisa quando a partida carregada é de outro dia, ou já chegou ao fim (o caso
+do jogo duplo), mostrando o placar que está no ar; quando um time ainda está com
+o nome de fábrica, que iria à faixa como "Time Visitante"; e quando as cores dos
+dois times são parecidas demais, porque na barra da faixa elas se encostam e
+viram um bloco só. O aviso de cor mostra as duas cores ao lado do texto.
+
+Nenhuma dessas contas pede campo novo ao servidor: todas saem do estado que já
+chega. Elas moram em `public/shared/conferencia.js`, sem DOM, e têm teste — a
+virada de dia é por data no calendário e não por 24 horas, senão o jogo de
+sábado à noite conferido no domingo de manhã passaria batido.
+
 ## Aparência no ar
 
 Cinco skins, escolhidas por partida na aba **Ajustes**, ao lado da cor da

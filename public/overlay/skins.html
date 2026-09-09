@@ -101,10 +101,14 @@
   .palco .cena-painel { background: none; }   /* o escurecimento atrapalha a comparação */
 
   /* Faixa e painel entram no ar em momentos diferentes — a faixa durante o
-     jogo, o painel no intervalo. Mostrar os dois juntos daria a impressão de
-     uma colisão que não acontece, então a vitrine alterna entre eles.
-     (Vale saber: se o operador subir o painel com a faixa no ar, eles SE
-     sobrepõem de verdade. Isso é assunto da peça, não da vitrine.) */
+     jogo, o painel no intervalo — então a vitrine alterna entre eles.
+
+     As duas CAIXAS se cruzam (a faixa ocupa y 867–984, o painel y 200–1012), e
+     por isso é fácil supor uma colisão; ela não acontece. `transmissao.modo`
+     tem um valor só, e a faixa se recolhe sozinha assim que o modo vira
+     intervalo ou resumo. Medido no navegador, com as duas páginas abertas:
+     subir o painel com a faixa no ar tira a faixa, e ela não volta sozinha
+     quando o jogo recomeça. */
   body:not(.mostrando-faixa) .palco .faixa { display: none; }
   body.mostrando-faixa .palco .cena-painel { display: none; }
 </style>

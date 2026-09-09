@@ -511,54 +511,28 @@ function desenharUltimos(estado) {
 }
 
 // ------------------------------------------------------- conferência pré-jogo
-
-const NOME_DA_FONTE = {
-  faixa: 'Faixa do rodapé (OBS)',
-  intervalo: 'Painel do intervalo (OBS)'
-};
-
-/** Há quanto tempo, em palavras curtas — cabe na coluna da direita. */
-function desde(quando) {
-  const seg = Math.max(0, Math.round((DuStats.agoraServidor() - quando) / 1000));
-  if (seg < 60) return 'agora há pouco';
-  const min = Math.round(seg / 60);
-  return min < 60 ? `há ${min} min` : `há ${Math.round(min / 60)} h`;
-}
+//
+// As regras moram em /shared/conferencia.js, sem DOM, para poderem ser testadas.
+// Aqui fica só o desenho.
 
 let qrDesenhado = null;   // a URL já desenhada, para não refazer a cada pulso
 
 function desenharConferencia(estado) {
-  const fontes = estado.fontes || [];
-  const itens = [];
+  const itens = DuStats.conferencia.itens(estado, DuStats.agoraServidor());
 
-  for (const [chave, nome] of Object.entries(NOME_DA_FONTE)) {
-    const ligada = fontes.find((f) => f.fonte === chave);
-    itens.push({
-      estado: ligada ? 'ok' : 'falta',
-      marca: ligada ? '●' : '○',
-      nome,
-      detalhe: ligada ? `recebendo ${desde(ligada.desde)}` : 'não está recebendo'
-    });
-  }
-
-  // Dois painéis abertos registram o mesmo gol duas vezes, e o placar só
-  // denuncia isso depois. Antes de existir a lista de fontes não havia como
-  // saber; agora dá para avisar enquanto ainda é fácil fechar um.
-  const paineis = fontes.filter((f) => f.fonte === 'painel').length;
-  if (paineis > 1) {
-    itens.push({
-      estado: 'alerta',
-      marca: '▲',
-      nome: `${paineis} painéis abertos ao mesmo tempo`,
-      detalhe: 'o mesmo lance pode entrar duas vezes'
-    });
-  }
+  // As bolinhas de cor só aparecem onde o aviso É sobre cor: descrever "parecidas
+  // demais" com palavras e não mostrar quais são deixa o operador adivinhando.
+  // Só hex de seis dígitos entra no style: o valor vem do seletor de cor e já
+  // chega assim, mas config editada à mão é config que pode chegar torta.
+  const amostras = (cores) => (cores || [])
+    .filter((c) => /^#[0-9a-f]{6}$/i.test(String(c)))
+    .map((c) => `<i class="amostra" style="background:${c}"></i>`).join('');
 
   $('#checagens').innerHTML = itens.map((i) => `
     <li class="${i.estado}">
       <span class="marca">${i.marca}</span>
-      <span class="nome">${i.nome}</span>
-      <span class="detalhe">${i.detalhe}</span>
+      <span class="nome">${escapar(i.nome)}${amostras(i.cores)}</span>
+      <span class="detalhe">${escapar(i.detalhe)}</span>
     </li>`).join('');
 
   // O endereço vem do servidor, não do location: quem abre o painel no PC do

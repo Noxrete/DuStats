@@ -35,6 +35,7 @@ const CAMINHOS = [
   '/control/app.js',
   '/control/posse.html',
   '/shared/qr.js',
+  '/shared/conferencia.js',
   '/shared/faixa.css',
   '/shared/skins.css',
   '/overlay/skins.html',
