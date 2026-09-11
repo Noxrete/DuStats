@@ -141,7 +141,11 @@ const SKINS = [
   ['vidro',    'Vidro',    'material: lâmina translúcida que pousa'],
   ['traco',    'Traço',    'ausência: só filetes e tipografia sobre o vídeo'],
   ['bandeira', 'Bandeira', 'clube: o verde vira estrutura, não detalhe'],
-  ['estadio',  'Estádio',  'luz: quase preto com aresta de neon']
+  ['estadio',  'Estádio',  'luz: quase preto com aresta de neon'],
+  ['capsulas', 'Cápsulas', 'lona: cada estatística numa pastilha própria'],
+  ['costura',  'Costura',  'confronto: dois campos de cor, um de cada clube'],
+  ['noturno',  'Noturno',  'refletor: escuro com os escudos inteiros nas pontas'],
+  ['diurno',   'Diurno',   'sol: cartaz claro, barras crescendo do centro']
 ];
 
 /*
@@ -154,8 +158,8 @@ const ESTADO = {
   config: {
     competicao: 'Campeonato Amador', local: 'Estádio Municipal',
     acento: '#17b64a', skin: 'placar',
-    casa: { nome: 'Charrua', sigla: 'CHA', cor: '#c0161f', corTexto: '#fff', escudo: '/demo/charrua.svg' },
-    fora: { nome: 'Guarapuava', sigla: 'GUA', cor: '#1f8f3a', corTexto: '#fff', escudo: '/demo/guarapuava.svg' }
+    casa: { nome: 'Charrua', sigla: 'CHA', cor: '#c0161f', corTexto: '#fff', escudo: '/demo/charrua.png' },
+    fora: { nome: 'Guarapuava', sigla: 'GUA', cor: '#1f8f3a', corTexto: '#fff', escudo: '/demo/guarapuava.png' }
   },
   placar: { casa: 2, fora: 1 },
   comparativo: [
@@ -223,6 +227,8 @@ function montar() {
   raiz.setProperty('--cor-casa', ESTADO.config.casa.cor);
   raiz.setProperty('--cor-fora', ESTADO.config.fora.cor);
   raiz.setProperty('--acento', ESTADO.config.acento);
+  raiz.setProperty('--escudo-casa', `url("${ESTADO.config.casa.escudo}")`);
+  raiz.setProperty('--escudo-fora', `url("${ESTADO.config.fora.escudo}")`);
 
   ajustarEscala();
 }

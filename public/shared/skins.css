@@ -316,6 +316,591 @@
 }
 [data-skin="estadio"] .pontinhos i.ativo { box-shadow: 0 0 10px var(--acento); }
 
+/* ═════════════════════════════════════════ A REGRA DAS QUATRO DE BAIXO ════
+ *
+ * As quatro skins acima nasceram do navy. As quatro abaixo nasceram de
+ * maquetes em que o escudo era decoração: recortado em cunha por `clip-path`,
+ * posto POR CIMA do painel, atravessando o nome do time e a primeira linha de
+ * estatística. Bonito parado, errado no ar — e é o mesmo erro que a Bandeira
+ * já tinha cometido com o campo diagonal.
+ *
+ * Então vale para as quatro, sem exceção:
+ *
+ *  1. O ESCUDO NUNCA É CORTADO. Nada de `clip-path` atravessando o brasão:
+ *     um escudo pela metade não é estilo, é um clube mal representado. Ele
+ *     entra inteiro, com `object-fit: contain`, no espaço que é dele.
+ *
+ *  2. O ESCUDO NUNCA COBRE DADO, E DADO NUNCA COBRE ESCUDO. Cada um tem sua
+ *     coluna. Onde o desenho pede escudo grande ao fundo, ele vira marca
+ *     d'água atrás do conteúdo (z-index), com margem reservada para o texto
+ *     não pousar em cima dele.
+ *
+ *  3. DECORAÇÃO É PSEUDO-ELEMENTO ATRÁS DO CONTEÚDO. Pseudo-elemento
+ *     posicionado pinta ACIMA do fluxo normal; sem uma camada explícita, a
+ *     costura e a diagonal passam por cima das barras e adulteram a cor do
+ *     clube. O conteúdo sobe uma camada em todas.
+ */
+
+/* ═══════════════════════════════════════════════════════ 5. CÁPSULAS ══════
+ *
+ * Lona. A peça é um cartaz de linho cru, e cada estatística mora numa pastilha
+ * escura própria — o dado deixa de ser linha de tabela e vira objeto. As
+ * pastilhas entram uma a uma, o que dá ao painel um ritmo de contagem.
+ */
+
+[data-skin="capsulas"] {
+  --navy-fundo: #e8e2d2;
+  --navy: #ece7d8;
+  --navy-claro: #f1ede1;
+  --navy-borda: rgba(15, 16, 14, .10);
+  --raio: 34px;
+  --sombra: 0 30px 80px rgba(0, 0, 0, .45);
+  --texto: #16180f;
+  --texto-fraco: #6f776a;
+  --linha: rgba(15, 16, 14, .12);
+  --pastilha: #0f100e;
+}
+
+[data-skin="capsulas"] .painel-cheio,
+[data-skin="capsulas"] .faixa {
+  background: var(--navy-fundo);
+  border: 1px solid var(--navy-borda);
+}
+/* A faixa clara do topo não existe aqui: sobre linho cru ela sumiria. O
+   acento volta como um fio na borda de baixo, onde ainda se lê. */
+[data-skin="capsulas"] .painel-cheio::before,
+[data-skin="capsulas"] .faixa::before {
+  top: auto; bottom: 0; height: 5px;
+  background: var(--acento);
+}
+
+[data-skin="capsulas"] .competicao,
+[data-skin="capsulas"] .rotulo-faixa {
+  background: rgba(15, 16, 14, .07);
+  color: var(--texto-fraco);
+}
+[data-skin="capsulas"] .placar-grande { background: var(--pastilha); color: #f4f1e8; }
+
+/* O escudo ganha um disco claro atrás: sobre linho, um brasão escuro de borda
+   preta encosta no fundo e perde o contorno. */
+[data-skin="capsulas"] .confronto .escudo {
+  background: #fff;
+  border-radius: 50%;
+  padding: 5px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .16);
+}
+
+/* As pastilhas. O `display: contents` some com o invólucro da linha para que
+   rótulo, valores e trilho virem itens da MESMA grade — é o que permite
+   remontar a linha sem tocar no HTML, que continua o mesmo das outras skins. */
+[data-skin="capsulas"] .comparativo {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  align-content: center;
+}
+[data-skin="capsulas"] .linha-comp {
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 14px;
+  background: var(--pastilha);
+  border-radius: 24px;
+  padding: 20px 26px 22px;
+}
+[data-skin="capsulas"] .linha-comp > div:not(.valor) { display: contents; }
+/* As três faixas da pastilha — rótulo, par de números, barra — precisam ser
+   ditas com `grid-row`. Sem isso a colocação automática espalha os quatro itens
+   em quatro linhas, na ordem do HTML, e o valor do visitante cai embaixo. */
+[data-skin="capsulas"] .linha-comp .rotulo-linha {
+  grid-column: 1 / -1; grid-row: 1;
+  margin: 0;
+  text-align: center;
+  font-size: 17px; letter-spacing: .16em;
+  color: #a3ae9b;
+}
+[data-skin="capsulas"] .linha-comp .valor {
+  grid-row: 2;
+  font-size: 46px;
+  color: #f4f1e8;
+}
+[data-skin="capsulas"] .linha-comp .valor.esq  { grid-column: 1; text-align: left; }
+[data-skin="capsulas"] .linha-comp .valor.dir  { grid-column: 2; text-align: right; }
+/* Valor do líder continua na cor do clube — a pastilha muda o fundo, nunca
+   quem está ganhando a estatística. */
+[data-skin="capsulas"] .linha-comp .valor.lider-casa { color: var(--cor-casa); }
+[data-skin="capsulas"] .linha-comp .valor.lider-fora { color: var(--cor-fora); }
+[data-skin="capsulas"] .linha-comp .trilho {
+  grid-column: 1 / -1; grid-row: 3;
+  margin-top: 12px;
+  height: 10px;
+  background: rgba(255, 255, 255, .10);
+  box-shadow: none;
+}
+
+[data-skin="capsulas"] .faixa .trilho,
+[data-skin="capsulas"] .faixa .rotulo-faixa { border-radius: 999px; }
+[data-skin="capsulas"] .faixa .trilho { background: rgba(15, 16, 14, .14); box-shadow: none; }
+[data-skin="capsulas"] .faixa .linha-faixa { padding: 0 34px; }
+
+/* A entrada: a peça se desenrola a partir da base, como um cartaz baixando. */
+[data-skin="capsulas"] .cena-painel.no-ar .painel-cheio,
+[data-skin="capsulas"] .faixa.no-ar {
+  animation: capsulaDesenrolar 650ms cubic-bezier(.25, .9, .25, 1) both;
+}
+@keyframes capsulaDesenrolar {
+  from { opacity: 0; transform: scaleY(.72) translateY(26px); }
+  to   { opacity: 1; transform: none; }
+}
+[data-skin="capsulas"] .painel-cheio { transform-origin: bottom; }
+
+/* E as pastilhas pipocam uma a uma, com um repique curto no fim. */
+[data-skin="capsulas"] .slide.ativo .linha-comp {
+  animation: capsulaPipocar 420ms cubic-bezier(.2, 1.3, .4, 1) both;
+  animation-delay: calc(var(--ordem, 0) * 70ms);
+}
+@keyframes capsulaPipocar {
+  from { opacity: 0; transform: translateY(22px) scale(.94); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ═══════════════════════════════════════════════════════ 6. COSTURA ══════
+ *
+ * Confronto. O cabeçalho é dividido em dois campos de cor — um de cada clube —
+ * unidos por uma costura clara na diagonal. É a única skin em que a cor dos
+ * times vira estrutura, e por isso ela precisa de cuidado dobrado: a costura é
+ * o que impede os dois campos de brigarem quando as camisas são parecidas.
+ */
+
+[data-skin="costura"] {
+  --navy-fundo: #e8e2d2;
+  --navy: #ece7d8;
+  --navy-claro: #f1ede1;
+  --navy-borda: rgba(15, 16, 14, .12);
+  --raio: 30px;
+  --sombra: 0 30px 80px rgba(0, 0, 0, .45);
+  --texto: #16180f;
+  --texto-fraco: #6f776a;
+  --linha: rgba(15, 16, 14, .12);
+}
+
+[data-skin="costura"] .painel-cheio,
+[data-skin="costura"] .faixa {
+  background: var(--navy-fundo);
+  border: 1px solid var(--navy-borda);
+  padding-top: 0;
+}
+[data-skin="costura"] .painel-cheio::before,
+[data-skin="costura"] .faixa::before { display: none; }
+
+/* Os dois campos. Cada `.time` deixa de ser texto solto e vira um bloco na cor
+   do clube, com a borda interna cortada em diagonal — e a costura clara entre
+   eles é um pseudo-elemento do `.confronto`, ATRÁS de tudo (regra 3). */
+[data-skin="costura"] .cabecalho {
+  position: relative;
+  margin: 0 -72px;              /* sangra até a borda do painel */
+  padding: 0;
+  overflow: hidden;
+  border-radius: var(--raio) var(--raio) 0 0;
+}
+[data-skin="costura"] .confronto {
+  position: relative;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 0;
+  margin: 0;
+  min-height: 168px;
+}
+[data-skin="costura"] .confronto .time {
+  position: relative;
+  align-self: stretch;
+  align-items: center;
+  padding: 0 56px;
+  color: #fff;
+}
+/* O corte diagonal vive no PSEUDO-ELEMENTO que pinta o campo, não no `.time`.
+   A diferença não é estética: `clip-path` recorta os descendentes junto, então
+   cortar o `.time` cortaria o escudo que mora dentro dele — exatamente o erro
+   da maquete. Pintando o campo numa camada de fundo, o brasão fica fora do
+   alcance da tesoura, aconteça o que acontecer com o layout. */
+[data-skin="costura"] .confronto .time.casa,
+[data-skin="costura"] .confronto .time.fora { background: none; }
+[data-skin="costura"] .confronto .time::before {
+  content: '';
+  position: absolute; inset: 0;
+  z-index: -1;
+}
+[data-skin="costura"] .confronto .time.casa::before {
+  background: var(--cor-casa);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 46px) 100%, 0 100%);
+}
+[data-skin="costura"] .confronto .time.fora::before {
+  background: var(--cor-fora);
+  clip-path: polygon(46px 0, 100% 0, 100% 100%, 0 100%);
+}
+[data-skin="costura"] .confronto .time.casa {
+  padding-right: 74px;
+  animation: costuraEsq 550ms cubic-bezier(.2, .9, .2, 1) both;
+}
+[data-skin="costura"] .confronto .time.fora {
+  padding-left: 74px;
+  animation: costuraDir 550ms cubic-bezier(.2, .9, .2, 1) both;
+}
+/* O nome sempre encostado na costura, o escudo sempre na borda de fora: assim
+   o brasão tem o canto todo para ele e nunca cai sob a tipografia (regra 2). */
+[data-skin="costura"] .confronto .time.casa { flex-direction: row-reverse; justify-content: flex-start; }
+[data-skin="costura"] .confronto .time.fora { flex-direction: row-reverse; justify-content: flex-end; }
+[data-skin="costura"] .confronto .nome-time { font-size: 44px; letter-spacing: .01em; }
+[data-skin="costura"] .confronto .escudo {
+  width: 84px; height: 84px;
+  background: rgba(255, 255, 255, .92);
+  border-radius: 14px;
+  padding: 6px;
+}
+
+/* A costura: uma tira clara na diagonal, entre os dois campos. */
+[data-skin="costura"] .confronto::before {
+  content: '';
+  position: absolute; inset: 0;
+  z-index: 0;
+  background: var(--navy-fundo);
+  animation: gFade 400ms 300ms both;
+}
+[data-skin="costura"] .confronto > * { position: relative; z-index: 1; }
+
+/* O placar fica no vão da costura, em bloco escuro, para não se confundir com
+   nenhum dos dois campos de cor. */
+[data-skin="costura"] .placar-grande {
+  align-self: stretch;
+  display: flex; align-items: center;
+  border-radius: 0;
+  padding: 0 30px;
+  background: #0f100e;
+  color: #f4f1e8;
+}
+
+/* A tarja da competição ganha faixa própria acima dos campos. Flutuando no
+   meio, ela caía exatamente sobre o bloco do placar. */
+[data-skin="costura"] .competicao {
+  display: block;
+  border-radius: 0;
+  padding: 12px 0 13px;
+  background: #0f100e;
+  color: rgba(255, 255, 255, .7);
+  font-size: 16px;
+}
+[data-skin="costura"] .subtitulo {
+  margin: 0;
+  padding: 14px 0 12px;
+  color: var(--texto-fraco);
+}
+
+/* O corpo volta ao linho, com as linhas em duas colunas. */
+[data-skin="costura"] .comparativo {
+  grid-template-columns: 1fr 1fr;
+  gap: 0 72px;
+  /* O corpo é alto e as seis linhas são poucas: distribuídas, elas preenchem o
+     cartaz; centralizadas, viram um bloco pequeno cercado de linho vazio. */
+  height: 100%;
+  align-content: space-evenly;
+}
+[data-skin="costura"] .linha-comp { grid-template-columns: 120px 1fr 120px; }
+[data-skin="costura"] .linha-comp .valor { font-size: 40px; }
+[data-skin="costura"] .linha-comp .rotulo-linha { font-size: 17px; }
+[data-skin="costura"] .trilho { height: 11px; }
+[data-skin="costura"] .linha-comp .rotulo-linha { color: #4a4f45; letter-spacing: .12em; }
+[data-skin="costura"] .linha-comp .valor { color: #16180f; }
+[data-skin="costura"] .trilho {
+  background: rgba(15, 16, 14, .12);
+  box-shadow: none;
+}
+
+/* Na faixa a costura aparece em miniatura: as duas siglas em campos de cor. */
+[data-skin="costura"] .rotulo-faixa {
+  background: rgba(15, 16, 14, .07);
+  color: var(--texto-fraco);
+}
+[data-skin="costura"] .time-faixa {
+  padding: 6px 16px;
+  border-radius: 6px;
+  color: #fff;
+  background: var(--cor);
+}
+[data-skin="costura"] .time-faixa i { display: none; }
+
+@keyframes costuraEsq {
+  from { opacity: 0; transform: translateX(-64px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes costuraDir {
+  from { opacity: 0; transform: translateX(64px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes gFade { from { opacity: 0; } to { opacity: 1; } }
+
+[data-skin="costura"] .cena-painel.no-ar .painel-cheio,
+[data-skin="costura"] .faixa.no-ar {
+  animation: subir 520ms cubic-bezier(.2, .9, .2, 1) both;
+}
+
+/* ═══════════════════════════════════════════════════════ 7. NOTURNO ══════
+ *
+ * Jogo à noite. Quase preto, trilhos em creme, e os dois escudos GRANDES nas
+ * pontas — inteiros, em marca d'água, com a área de dados reservada entre
+ * eles. É o contraponto da Cápsulas: a mesma família de formas, vista sob
+ * refletor em vez de sol.
+ */
+
+[data-skin="noturno"] {
+  --navy-fundo: #141610;
+  --navy: #16180f;
+  --navy-claro: #1b1e14;
+  --navy-borda: rgba(232, 226, 210, .14);
+  --raio: 30px;
+  --sombra: 0 30px 80px rgba(0, 0, 0, .6);
+  --texto: #e8e2d2;
+  --texto-fraco: #8d9a86;
+  --linha: rgba(232, 226, 210, .12);
+}
+
+[data-skin="noturno"] .painel-cheio,
+[data-skin="noturno"] .faixa {
+  background: var(--navy-fundo);
+  border: 1px solid var(--navy-borda);
+}
+[data-skin="noturno"] .painel-cheio::before,
+[data-skin="noturno"] .faixa::before {
+  height: 3px;
+  background: linear-gradient(90deg, var(--cor-casa) 0 50%, var(--cor-fora) 50% 100%);
+}
+
+/* Os escudos em marca d'água, um em cada ponta, INTEIROS (regra 1) e atrás do
+   conteúdo (regra 3). O painel reserva 300px de cada lado para eles, então
+   nenhuma linha de estatística chega a passar por cima. */
+[data-skin="noturno"] .painel-cheio::after {
+  content: '';
+  position: absolute; inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    var(--escudo-casa, none) left 26px center / 226px 226px no-repeat,
+    var(--escudo-fora, none) right 26px center / 226px 226px no-repeat;
+  opacity: .34;
+}
+[data-skin="noturno"] .painel-cheio > * { position: relative; z-index: 1; }
+/* A reserva é a largura do escudo mais a folga: é o que garante que nenhuma
+   linha de estatística chegue a passar por cima do brasão (regra 2). */
+[data-skin="noturno"] .corpo { padding: 0 252px; }
+[data-skin="noturno"] .comparativo { height: 100%; align-content: space-evenly; }
+
+[data-skin="noturno"] .competicao,
+[data-skin="noturno"] .rotulo-faixa,
+[data-skin="noturno"] .placar-grande { background: rgba(232, 226, 210, .07); }
+[data-skin="noturno"] .confronto .nome-time.casa { color: var(--cor-casa); }
+[data-skin="noturno"] .confronto .escudo { width: 54px; height: 54px; }
+
+/* Trilhos em creme: sobre quase-preto, o vazio da barra precisa ser mais claro
+   que o fundo — o inverso da regra do navy. */
+[data-skin="noturno"] .trilho {
+  background: rgba(232, 226, 210, .12);
+  box-shadow: none;
+  height: 11px;
+}
+[data-skin="noturno"] .linha-comp .valor { color: var(--texto); }
+[data-skin="noturno"] .linha-comp .rotulo-linha { letter-spacing: .18em; }
+[data-skin="noturno"] .comparativo { gap: 16px; }
+
+[data-skin="noturno"] .cena-painel.no-ar .painel-cheio,
+[data-skin="noturno"] .faixa.no-ar {
+  animation: subir 560ms cubic-bezier(.2, .9, .2, 1) both;
+}
+/* As linhas não deslizam: acendem. À noite o gesto certo é a luz, não o
+   movimento — é a mesma ideia da Estádio, aplicada a um painel de lona. */
+[data-skin="noturno"] .slide.ativo .linha-comp {
+  animation: noturnoAcender 420ms ease-out both;
+  animation-delay: calc(var(--ordem, 0) * 60ms);
+}
+@keyframes noturnoAcender {
+  from { opacity: 0; filter: brightness(.3); }
+  to   { opacity: 1; filter: none; }
+}
+
+/* ════════════════════════════════════════════════════════ 8. DIURNO ══════
+ *
+ * Sol na grama. Cartaz claro, faixa escura de competição no topo, e o placar
+ * num vão branco entre dois blocos na cor dos clubes. A diferença de forma
+ * está nas linhas: o rótulo fica NO MEIO e as duas barras crescem dele para
+ * fora, em vez de dividirem um trilho só. Lê-se de longe e sob sol, que é a
+ * condição em que a Traço falha.
+ */
+
+[data-skin="diurno"] {
+  --navy-fundo: #f4f2ed;
+  --navy: #f8f7f3;
+  --navy-claro: #ffffff;
+  --navy-borda: rgba(17, 20, 26, .10);
+  --raio: 16px;
+  --sombra: 0 26px 70px rgba(0, 0, 0, .4);
+  --texto: #11141a;
+  --texto-fraco: #6b7280;
+  --linha: rgba(17, 20, 26, .10);
+}
+
+[data-skin="diurno"] .painel-cheio,
+[data-skin="diurno"] .faixa {
+  background: var(--navy-claro);
+  border: 1px solid var(--navy-borda);
+  padding-top: 0;
+}
+[data-skin="diurno"] .painel-cheio::before,
+[data-skin="diurno"] .faixa::before { display: none; }
+
+[data-skin="diurno"] .cabecalho { margin: 0 -72px; padding: 0; overflow: hidden; }
+
+/* A tarja escura da competição, colada no topo e centralizada. */
+[data-skin="diurno"] .competicao {
+  display: block;
+  border-radius: 0;
+  padding: 13px 0 14px;
+  background: #11141a;
+  color: rgba(255, 255, 255, .74);
+  font-size: 16px;
+}
+
+[data-skin="diurno"] .confronto {
+  grid-template-columns: 1fr auto 1fr;
+  gap: 0; margin: 0;
+  min-height: 128px;
+}
+[data-skin="diurno"] .confronto .time {
+  align-self: stretch; align-items: center;
+  padding: 0 40px;
+  color: #fff;
+}
+/* Escudo na borda de fora, nome encostado no placar: cada um com sua coluna,
+   nunca um sobre o outro (regra 2). */
+[data-skin="diurno"] .confronto .time.casa {
+  background: var(--cor-casa);
+  flex-direction: row-reverse; justify-content: flex-start;
+  animation: costuraEsq 480ms cubic-bezier(.2, .9, .2, 1) both;
+}
+[data-skin="diurno"] .confronto .time.fora {
+  background: var(--cor-fora);
+  flex-direction: row-reverse; justify-content: flex-end;
+  animation: costuraDir 480ms cubic-bezier(.2, .9, .2, 1) both;
+}
+[data-skin="diurno"] .confronto .nome-time { font-size: 42px; }
+[data-skin="diurno"] .confronto .escudo {
+  width: 76px; height: 76px;
+  background: rgba(255, 255, 255, .92);
+  border-radius: 10px; padding: 5px;
+}
+/* O vão branco do placar, que é o que faz os dois blocos parecerem encaixar. */
+[data-skin="diurno"] .placar-grande {
+  align-self: stretch;
+  display: flex; align-items: center;
+  border-radius: 0; padding: 0 40px;
+  background: #fff; color: #11141a;
+  animation: diurnoEncaixar 420ms 260ms cubic-bezier(.2, 1.2, .4, 1) both;
+}
+[data-skin="diurno"] .placar-grande .x { color: #9aa0aa; opacity: 1; }
+@keyframes diurnoEncaixar {
+  from { opacity: 0; transform: scaleX(.4); }
+  to   { opacity: 1; transform: none; }
+}
+
+[data-skin="diurno"] .subtitulo {
+  display: inline-block;
+  margin: 0; padding: 8px 22px 9px;
+  background: #eceae4; border-radius: 0 0 10px 10px;
+  color: #4b5563;
+}
+
+/* As linhas: valor · barra ← rótulo → barra · valor.
+ *
+ * O HTML continua o mesmo — quem remonta é o `display: contents`, que dissolve
+ * o invólucro e o trilho e promove rótulo e barras a itens da grade da linha.
+ * As duas metades do trilho viram barras independentes, cada uma crescendo do
+ * centro para fora, e o trilho vazio de cada lado é pintado por um
+ * pseudo-elemento na mesma célula, uma camada abaixo. */
+[data-skin="diurno"] .comparativo { gap: 0; height: 100%; align-content: space-evenly; }
+[data-skin="diurno"] .linha-comp {
+  grid-template-columns: 104px minmax(0, 1fr) auto minmax(0, 1fr) 104px;
+  align-items: center;
+  gap: 0 20px;
+}
+[data-skin="diurno"] .linha-comp > div:not(.valor) { display: contents; }
+[data-skin="diurno"] .linha-comp .trilho { display: contents; }
+
+[data-skin="diurno"] .linha-comp .valor.esq { grid-column: 1; grid-row: 1; }
+[data-skin="diurno"] .linha-comp .valor.dir { grid-column: 5; grid-row: 1; text-align: left; }
+[data-skin="diurno"] .linha-comp .rotulo-linha {
+  grid-column: 3; grid-row: 1;
+  margin: 0; padding: 0 8px;
+  font-size: 16px; letter-spacing: .14em;
+  color: #6b7280; white-space: nowrap;
+}
+[data-skin="diurno"] .linha-comp .trilho span {
+  grid-row: 1; height: 9px; border-radius: 999px;
+  position: relative; z-index: 1;
+}
+[data-skin="diurno"] .linha-comp .trilho .casa { grid-column: 2; margin-left: auto; }
+[data-skin="diurno"] .linha-comp .trilho .fora { grid-column: 4; margin-right: auto; }
+/* Os dois trilhos vazios, atrás das barras. */
+[data-skin="diurno"] .linha-comp::before,
+[data-skin="diurno"] .linha-comp::after {
+  content: '';
+  grid-row: 1; height: 9px; border-radius: 999px;
+  background: #e4e2dc;
+  z-index: 0;
+}
+[data-skin="diurno"] .linha-comp::before { grid-column: 2; }
+[data-skin="diurno"] .linha-comp::after  { grid-column: 4; }
+[data-skin="diurno"] .linha-comp .valor { font-size: 32px; color: #11141a; }
+
+/* Na faixa o mesmo gesto, em uma linha só. */
+[data-skin="diurno"] .rotulo-faixa {
+  background: #11141a; color: rgba(255, 255, 255, .8);
+  margin-bottom: 12px;
+}
+[data-skin="diurno"] .faixa .trilho { background: #e4e2dc; box-shadow: none; }
+[data-skin="diurno"] .time-faixa { color: #11141a; }
+[data-skin="diurno"] .valor-faixa { color: #11141a; }
+
+[data-skin="diurno"] .cena-painel.no-ar .painel-cheio,
+[data-skin="diurno"] .faixa.no-ar {
+  animation: subir 460ms cubic-bezier(.2, .9, .2, 1) both;
+}
+[data-skin="diurno"] .slide.ativo .linha-comp {
+  animation: entrarEmCascata 380ms cubic-bezier(.16, 1, .3, 1) both;
+  animation-delay: calc(var(--ordem, 0) * 55ms);
+}
+
+/* A COR DO TEXTO PRECISA SER DITA NA PEÇA, não só no token.
+ *
+ * `body { color: var(--texto) }` é resolvido no body. Redefinir --texto num
+ * descendente não reescreve uma cor JÁ COMPUTADA acima: a peça continua
+ * herdando o branco do navy. No ar isso passaria despercebido (o data-skin
+ * mora no <html>, acima do body), mas na vitrine o data-skin está no palco —
+ * e foi lá que apareceu, com os valores da faixa brancos sobre linho.
+ * Dizer a cor na própria peça acerta os dois casos com a mesma linha. */
+[data-skin="capsulas"] .painel-cheio, [data-skin="capsulas"] .faixa,
+[data-skin="costura"]  .painel-cheio, [data-skin="costura"]  .faixa,
+[data-skin="noturno"]  .painel-cheio, [data-skin="noturno"]  .faixa,
+[data-skin="diurno"]   .painel-cheio, [data-skin="diurno"]   .faixa { color: var(--texto); }
+
+/* Os pontinhos do carrossel são brancos translúcidos, desenhados para o navy.
+   Nas três skins claras eles somem no fundo, e o operador perde a única pista
+   de quantos slides ainda vêm. */
+[data-skin="capsulas"] .pontinhos i,
+[data-skin="costura"] .pontinhos i,
+[data-skin="diurno"] .pontinhos i { background: rgba(15, 16, 14, .16); }
+
+/* ------------------------------------------------- ajustes da faixa clara */
+[data-skin="capsulas"] .valor-faixa,
+[data-skin="costura"]  .valor-faixa,
+[data-skin="diurno"]   .valor-faixa { color: var(--texto); }
+[data-skin="capsulas"] .time-faixa,
+[data-skin="diurno"]   .time-faixa { color: var(--texto); }
+[data-skin="capsulas"] .rotulo-faixa,
+[data-skin="costura"]  .rotulo-faixa { color: var(--texto-fraco); }
+
 /* ═══════════════════════════════════════════════════════════════════════ */
 
 /* Quem configurou o sistema para reduzir movimento não perde a skin, só o
@@ -328,7 +913,14 @@
   [data-skin] .painel-cheio::after,
   [data-skin] .faixa::after,
   [data-skin] .rotulo-faixa::after,
-  [data-skin] .linha-comp .rotulo-linha::after {
+  [data-skin] .linha-comp .rotulo-linha::after,
+  /* As quatro de baixo coreografam o cabeçalho: os campos de cor entram pelos
+     lados e o placar encaixa no meio. Sem estas linhas, "reduzir movimento"
+     deixaria de fora justamente o gesto mais largo delas. */
+  [data-skin] .confronto .time,
+  [data-skin] .confronto::before,
+  [data-skin] .placar-grande,
+  [data-skin] .slide.ativo .linha-comp {
     animation-duration: 1ms !important;
     animation-delay: 0ms !important;
     transition-duration: 1ms !important;

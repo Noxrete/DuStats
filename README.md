@@ -308,7 +308,7 @@ sábado à noite conferido no domingo de manhã passaria batido.
 
 ## Aparência no ar
 
-Cinco skins, escolhidas por partida na aba **Ajustes**, ao lado da cor da
+Nove skins, escolhidas por partida na aba **Ajustes**, ao lado da cor da
 transmissão:
 
 | Skin | A ideia |
@@ -318,6 +318,26 @@ transmissão:
 | **Traço** | ausência — só filetes e tipografia, sem painel |
 | **Bandeira** | clube — a cor da transmissão vira estrutura, não detalhe |
 | **Estádio** | luz — quase preto, com aresta de neon acendendo |
+| **Cápsulas** | lona — cartaz de linho cru, cada estatística numa pastilha própria |
+| **Costura** | confronto — dois campos de cor, um de cada clube, unidos por uma costura |
+| **Noturno** | refletor — escuro, com os escudos inteiros em marca d'água nas pontas |
+| **Diurno** | sol — cartaz claro, rótulo no meio e as barras crescendo dele para fora |
+
+As quatro últimas nasceram de maquetes em que o escudo era decoração: recortado
+em cunha, posto por cima do painel, atravessando o nome do time e a primeira
+linha de estatística. Por isso elas seguem três regras, e há teste para as três:
+
+1. **O escudo nunca é cortado.** Nada de `clip-path` atravessando o brasão — e
+   como `clip-path` recorta os descendentes junto, ele também não pode estar em
+   nenhum ancestral do escudo. Onde o desenho pede corte diagonal, quem é
+   cortado é o pseudo-elemento que pinta o fundo, não o elemento que contém o
+   escudo.
+2. **O escudo nunca cobre dado, e dado nunca cobre escudo.** Cada um com sua
+   coluna. Onde o escudo é marca d'água, a coluna de dados tem margem reservada
+   do tamanho dele.
+3. **Decoração é pseudo-elemento atrás do conteúdo.** Pseudo-elemento
+   posicionado pinta acima do fluxo normal; sem uma camada explícita, a costura
+   e a diagonal passam por cima das barras e adulteram a cor do clube.
 
 Para comparar antes de entrar no ar: **`/overlay/skins.html`**. Desenha as peças
 de verdade — o mesmo `paineis.js` e o mesmo `faixa.css` que vão para o OBS —

@@ -44,7 +44,7 @@
    * de fundo (Traço) precisam aqui de uma tradução, não de uma cópia — senão
    * viram um retângulo escuro sem graça.
    */
-  function paletaDaSkin(skin, acento, acentoEscuro) {
+  function paletaDaSkin(skin, acento, acentoEscuro, corDaCasa, corDaFora) {
     const gradiente = (ctx, paradas) => {
       const g = ctx.createLinearGradient(0, 0, 0, LADO);
       for (const [pos, cor] of paradas) g.addColorStop(pos, cor);
@@ -53,6 +53,9 @@
 
     const skins = {
       placar: {
+        texto: '#fff',
+        separador: 'rgba(255,255,255,.3)',
+        rodape: '#6a78a4',
         textoFraco: '#93a0c4',
         bloco: NAVY_BLOCO,
         trilho: 'rgba(0,0,0,.34)',
@@ -70,6 +73,9 @@
       // Claro e arejado, com um facho de luz atravessando: é o que sobra da
       // ideia de lâmina translúcida quando não há vídeo para atravessar.
       vidro: {
+        texto: '#fff',
+        separador: 'rgba(255,255,255,.3)',
+        rodape: '#6a78a4',
         textoFraco: '#cdd6ea',
         bloco: 'rgba(255,255,255,.08)',
         trilho: 'rgba(0,0,0,.28)',
@@ -92,6 +98,9 @@
 
       // Sem blocos e sem faixa: só o fundo mais escuro possível e os filetes.
       traco: {
+        texto: '#fff',
+        separador: 'rgba(255,255,255,.3)',
+        rodape: '#6a78a4',
         textoFraco: 'rgba(255,255,255,.72)',
         bloco: 'rgba(255,255,255,.04)',
         trilho: 'rgba(255,255,255,.16)',
@@ -104,6 +113,9 @@
       },
 
       bandeira: {
+        texto: '#fff',
+        separador: 'rgba(255,255,255,.3)',
+        rodape: '#6a78a4',
         textoFraco: '#b9c6e4',
         bloco: 'rgba(0,0,0,.42)',
         trilho: 'rgba(0,0,0,.4)',
@@ -136,6 +148,9 @@
       },
 
       estadio: {
+        texto: '#fff',
+        separador: 'rgba(255,255,255,.3)',
+        rodape: '#6a78a4',
         textoFraco: '#7c8ba8',
         bloco: 'rgba(255,255,255,.04)',
         trilho: 'rgba(255,255,255,.05)',
@@ -166,12 +181,122 @@
           caixa(ctx, 0, 0, LADO, 4, 0, acento);
           ctx.restore();
         }
+      },
+
+      // ---------------------------------------------------- as quatro claras
+      //
+      // A partir daqui o cartão pode sair CLARO, e é por isso que a pele ganhou
+      // `texto`, `separador` e `rodape`: antes o branco estava escrito na mão
+      // no meio do desenho, o que num fundo de linho apaga o placar inteiro.
+
+      capsulas: {
+        texto: '#16180f',
+        textoPlacar: '#f4f1e8',      // o bloco do placar é preto sobre linho
+        textoFraco: '#6f776a',
+        separador: 'rgba(244,241,232,.34)',   // o × mora no bloco escuro, não no linho
+        rodape: '#8b9384',
+        bloco: '#0f100e',
+        trilho: 'rgba(15,16,14,.14)',
+        divisor: 'rgba(15,16,14,.16)',
+        fundo(ctx) {
+          ctx.fillStyle = gradiente(ctx, [[0, '#f1ede1'], [1, '#e2dbc8']]);
+          ctx.fillRect(0, 0, LADO, LADO);
+        },
+        // A lona não leva faixa clara no topo — some. O acento assina embaixo.
+        faixaTopo(ctx) { caixa(ctx, 0, LADO - 9, LADO, 9, 0, acento); }
+      },
+
+      costura: {
+        texto: '#16180f',
+        textoPlacar: '#f4f1e8',
+        textoTopo: 'rgba(255,255,255,.86)',   // a linha de competição cai sobre os campos de cor
+        textoFraco: '#6f776a',
+        separador: 'rgba(255,255,255,.42)',
+        rodape: '#8b9384',
+        bloco: '#0f100e',
+        trilho: 'rgba(15,16,14,.14)',
+        divisor: 'rgba(15,16,14,.16)',
+        fundo(ctx) {
+          ctx.fillStyle = '#e8e2d2';
+          ctx.fillRect(0, 0, LADO, LADO);
+
+          // Os dois campos de cor só na tarja do topo, onde moram escudos e
+          // placar. Atravessando o cartão inteiro, eles poriam o número da casa
+          // sobre o campo do visitante — o mesmo erro da Bandeira.
+          const altura = 272;   // acaba acima dos nomes dos times, que ficam no linho
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(0, 0); ctx.lineTo(LADO * 0.54, 0);
+          ctx.lineTo(LADO * 0.46, altura); ctx.lineTo(0, altura);
+          ctx.closePath(); ctx.fill();
+          ctx.fillStyle = corDaCasa; ctx.fill();
+          ctx.beginPath();
+          ctx.moveTo(LADO * 0.58, 0); ctx.lineTo(LADO, 0);
+          ctx.lineTo(LADO, altura); ctx.lineTo(LADO * 0.50, altura);
+          ctx.closePath();
+          ctx.fillStyle = corDaFora; ctx.fill();
+          ctx.restore();
+        },
+        faixaTopo() { /* a costura entre os dois campos já é a assinatura */ }
+      },
+
+      noturno: {
+        texto: '#e8e2d2',
+        textoFraco: '#8d9a86',
+        separador: 'rgba(232,226,210,.3)',
+        rodape: '#6e7a68',
+        bloco: 'rgba(232,226,210,.07)',
+        trilho: 'rgba(232,226,210,.12)',
+        divisor: 'rgba(232,226,210,.16)',
+        fundo(ctx) {
+          ctx.fillStyle = gradiente(ctx, [[0, '#1b1e14'], [1, '#0d0f0a']]);
+          ctx.fillRect(0, 0, LADO, LADO);
+        },
+        faixaTopo(ctx) {
+          caixa(ctx, 0, 0, LADO / 2, 5, 0, corDaCasa);
+          caixa(ctx, LADO / 2, 0, LADO / 2, 5, 0, corDaFora);
+        }
+      },
+
+      diurno: {
+        texto: '#11141a',
+        textoTopo: 'rgba(255,255,255,.78)',   // a linha de competição mora na tarja escura
+        textoFraco: '#6b7280',
+        separador: '#9aa0aa',
+        rodape: '#9aa0aa',
+        bloco: '#ffffff',
+        trilho: '#e4e2dc',
+        divisor: 'rgba(17,20,26,.12)',
+        fundo(ctx) {
+          ctx.fillStyle = '#f7f6f2';
+          ctx.fillRect(0, 0, LADO, LADO);
+          // A tarja escura do topo, como no painel.
+          caixa(ctx, 0, 0, LADO, 104, 0, '#11141a');
+        },
+        faixaTopo() { /* a tarja do fundo já é a faixa desta skin */ }
       }
     };
 
     // Skin desconhecida cai no padrão: um post é publicado e não dá para
     // desfazer, então nunca sai um card sem estilo nenhum.
-    return skins[skin] || skins.placar;
+    const pele = skins[skin] || skins.placar;
+
+    /*
+     * Duas cores que NÃO seguem a cor do corpo, e é por isso que existem:
+     *
+     *  - `textoPlacar`: o bloco do placar tem tom próprio, e numa skin clara
+     *    ele é escuro. Usar a cor do corpo ali escreve preto sobre preto — o
+     *    placar, que é a informação mais importante do card, some.
+     *  - `textoTopo`: a linha de competição pode cair sobre tarja escura ou
+     *    sobre campo de cor, dependendo da skin.
+     *
+     * O padrão mantém as cinco primeiras exatamente como eram.
+     */
+    return {
+      textoPlacar: pele.texto,
+      textoTopo: pele.textoFraco,
+      ...pele
+    };
   }
 
   function escreve(ctx, texto, x, y, { tamanho = 32, peso = 400, cor = '#fff', alinha = 'center', espaco = 0 }) {
@@ -233,7 +358,7 @@
     const corFora = corDoTime(estado.config, 'fora', '#d92d20');
 
     const acento = estado.config?.acento || '#17b64a';
-    const pele = paletaDaSkin(estado.config?.skin, acento, global.DuStats.escurecer(acento));
+    const pele = paletaDaSkin(estado.config?.skin, acento, global.DuStats.escurecer(acento), corCasa, corFora);
 
     pele.fundo(ctx);
     // A faixa do topo é assinatura de forma, e cada skin assina do seu jeito —
@@ -241,7 +366,7 @@
     pele.faixaTopo(ctx);
 
     const cabecalho = [estado.config.competicao, estado.config.local].filter(Boolean).join('  ·  ');
-    escreve(ctx, cabecalho.toUpperCase(), LADO / 2, 82, { tamanho: 25, cor: pele.textoFraco, espaco: 4 });
+    escreve(ctx, cabecalho.toUpperCase(), LADO / 2, 82, { tamanho: 25, cor: pele.textoTopo, espaco: 4 });
 
     // --------------------------------------------------------------- placar
     await desenharEscudo(ctx, estado, 'casa', 168, 208, 128);
@@ -249,12 +374,12 @@
 
     // Bloco do placar num tom próprio, como o "2 x 0" do overlay do placar.
     caixa(ctx, LADO / 2 - 170, 112, 340, 150, 8, pele.bloco);
-    escreve(ctx, `${estado.placar.casa}`, LADO / 2 - 88, 240, { tamanho: 132, peso: 700 });
-    escreve(ctx, '×', LADO / 2, 228, { tamanho: 58, cor: 'rgba(255,255,255,.3)' });
-    escreve(ctx, `${estado.placar.fora}`, LADO / 2 + 88, 240, { tamanho: 132, peso: 700 });
+    escreve(ctx, `${estado.placar.casa}`, LADO / 2 - 88, 240, { tamanho: 132, peso: 700, cor: pele.textoPlacar });
+    escreve(ctx, '×', LADO / 2, 228, { tamanho: 58, cor: pele.separador });
+    escreve(ctx, `${estado.placar.fora}`, LADO / 2 + 88, 240, { tamanho: 132, peso: 700, cor: pele.textoPlacar });
 
-    escreve(ctx, global.DuStats.overlay.nome(estado.config, 'casa').toUpperCase(), 168, 316, { tamanho: 27, peso: 700 });
-    escreve(ctx, global.DuStats.overlay.nome(estado.config, 'fora').toUpperCase(), LADO - 168, 316, { tamanho: 27, peso: 700 });
+    escreve(ctx, global.DuStats.overlay.nome(estado.config, 'casa').toUpperCase(), 168, 316, { tamanho: 27, peso: 700, cor: pele.texto });
+    escreve(ctx, global.DuStats.overlay.nome(estado.config, 'fora').toUpperCase(), LADO - 168, 316, { tamanho: 27, peso: 700, cor: pele.texto });
     escreve(ctx, titulo.toUpperCase(), LADO / 2, 316, { tamanho: 22, cor: acento, espaco: 3 });
 
     // ---------------------------------------------------------- estatísticas
@@ -268,8 +393,8 @@
       const fatia = total > 0 ? linha.casa / total : 0.5;
       const sufixo = linha.sufixo || '';
 
-      escreve(ctx, `${linha.casa}${sufixo}`, 150, y + 26, { tamanho: 38, peso: 700, alinha: 'right' });
-      escreve(ctx, `${linha.fora}${sufixo}`, LADO - 150, y + 26, { tamanho: 38, peso: 700, alinha: 'left' });
+      escreve(ctx, `${linha.casa}${sufixo}`, 150, y + 26, { tamanho: 38, peso: 700, alinha: 'right', cor: pele.texto });
+      escreve(ctx, `${linha.fora}${sufixo}`, LADO - 150, y + 26, { tamanho: 38, peso: 700, alinha: 'left', cor: pele.texto });
       escreve(ctx, linha.rotulo.toUpperCase(), LADO / 2, y + 8, { tamanho: 19, cor: pele.textoFraco, espaco: 2.5 });
 
       const barraX = 178;
@@ -285,7 +410,7 @@
       caixa(ctx, 100, 812, LADO - 200, 2, 1, pele.divisor);
       // Marca de acento ao lado do título, no desenho do chip verde do placar.
       caixa(ctx, LADO / 2 - 66, 848, 5, 20, 2, acento);
-      escreve(ctx, 'GOLS', LADO / 2 + 6, 865, { tamanho: 20, cor: '#fff', espaco: 3 });
+      escreve(ctx, 'GOLS', LADO / 2 + 6, 865, { tamanho: 20, cor: pele.texto, espaco: 3 });
 
       // Cabem quatro linhas antes do rodapé; uma goleada vira "+N" em vez de
       // vazar o cartão pela borda de baixo.
@@ -303,14 +428,14 @@
 
         if (doTime.length > CABEM) {
           escreve(ctx, `+${doTime.length - CABEM}`, x, 908 + CABEM * 33, {
-            tamanho: 22, peso: 700, alinha, cor: '#93a0c4'
+            tamanho: 22, peso: 700, alinha, cor: pele.textoFraco
           });
         }
       }
     }
 
     const data = new Date(estado.criadaEm).toLocaleDateString('pt-BR');
-    escreve(ctx, `${data}  ·  DuStats`, LADO / 2, LADO - 34, { tamanho: 19, cor: '#6a78a4', espaco: 2 });
+    escreve(ctx, `${data}  ·  DuStats`, LADO / 2, LADO - 34, { tamanho: 19, cor: pele.rodape, espaco: 2 });
 
     return canvas;
   }

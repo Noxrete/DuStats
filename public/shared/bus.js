@@ -158,12 +158,24 @@
     const acento = e.config?.acento || '#17b64a';
     // Skin desconhecida cai no padrão em vez de deixar a peça sem estilo: uma
     // config vinda de uma versão mais nova não pode pôr no ar um painel cru.
-    const SKINS = ['placar', 'vidro', 'traco', 'bandeira', 'estadio'];
+    const SKINS = [
+      'placar', 'vidro', 'traco', 'bandeira', 'estadio',
+      'capsulas', 'costura', 'noturno', 'diurno'
+    ];
     const skin = e.config?.skin;
     document.documentElement.dataset.skin = SKINS.includes(skin) ? skin : 'placar';
 
     raiz.setProperty('--acento', acento);
     raiz.setProperty('--acento-escuro', escurecer(acento));
+
+    // O escudo como marca d'água é desenho de CSS (a skin Noturno o usa de
+    // fundo), e CSS não alcança o atributo src de uma <img>. Então a URL vem
+    // por variável. `url()` só é escrito quando há escudo: com a string vazia
+    // o navegador tentaria carregar a própria página como imagem.
+    for (const lado of ['casa', 'fora']) {
+      const url = e.config?.[lado]?.escudo;
+      raiz.setProperty(`--escudo-${lado}`, url ? `url("${encodeURI(url)}")` : 'none');
+    }
   }
 
   // ------------------------------------------------------------------- api
