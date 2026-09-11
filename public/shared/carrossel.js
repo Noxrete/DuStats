@@ -1,84 +1,64 @@
-/**
- * Carrossel de painéis. Serve tanto ao intervalo quanto ao resumo final —
- * são os mesmos quatro gráficos, mudando só o recorte de tempo e o título.
- */
+/** Carrossel compartilhado pelos overlays de intervalo e resumo. */
 (function (global) {
   'use strict';
 
   const SLIDES = [
-    { nome: 'Comparativo', desenhar: () => global.DuStats.paineis.comparativo },
-    { nome: 'Mapa de chutes', desenhar: () => global.DuStats.paineis.mapaDeChutes },
-    { nome: 'Pressão', desenhar: () => global.DuStats.paineis.pressao },
-    { nome: 'Gols e cartões', desenhar: () => global.DuStats.paineis.linhaDoTempo }
+    { nome: 'Comparativo', desenhar: () => global.DuStats.paineis.comparativo,
+      dados: (e) => e.comparativo },
+    { nome: 'Mapa de chutes', desenhar: () => global.DuStats.paineis.mapaDeChutes,
+      dados: (e) => [e.chutes, ['casa', 'fora'].map((lado) => [e.totais?.[lado]?.finalizacoes, e.totais?.[lado]?.noGol]), e.config.casa, e.config.fora] },
+    { nome: 'Pressão', desenhar: () => global.DuStats.paineis.pressao,
+      dados: (e) => [e.momentum, e.linhaDoTempo.filter((i) => i.tipo === 'gol'), e.config.casa, e.config.fora] },
+    { nome: 'Gols e cartões', desenhar: () => global.DuStats.paineis.linhaDoTempo,
+      dados: (e) => e.linhaDoTempo }
   ];
 
-  /** Troca o texto com um respiro, em vez de estalar de um para o outro. */
-  function trocarTexto(elemento, texto) {
-    elemento.classList.add('trocando');
-    setTimeout(() => {
-      elemento.textContent = texto;
-      elemento.classList.remove('trocando');
-    }, 150);
-  }
-
-  function iniciar({ modo, painel, titulo }) {
+  function iniciar({ modo, painel, titulo, sempreVisivel = false }) {
     let slideNoAr = null;
-    let assinaturaAtual = null;
-
-    /**
-     * Redesenhar reinicia todas as animações. Com o relógio correndo o servidor
-     * manda estado a cada 2 s; sem esta assinatura o painel ficaria piscando no
-     * ar sem parar.
-     */
-    const assinatura = (estado) => JSON.stringify([
-      estado.placar, estado.posse.casa, estado.comparativo,
-      estado.chutes.length, estado.momentum.length, estado.linhaDoTempo.length,
-      estado.config
-    ]);
+    let assinaturaCorpo = null;
+    let assinaturaCabecalho = null;
 
     function desenhar(estado, { forcar = false } = {}) {
-      const slide = (estado.transmissao.slide || 0) % SLIDES.length;
-      const nova = assinatura(estado);
-      if (!forcar && slide === slideNoAr && nova === assinaturaAtual) return;
-
-      const trocouDeSlide = slide !== slideNoAr;
-      const assinaturaAnterior = assinaturaAtual;
-      slideNoAr = slide;
-      assinaturaAtual = nova;
-
-      // O cabeçalho só é reconstruído quando os DADOS mudam. Trocar de slide
-      // mexe apenas no subtítulo: refazer o HTML inteiro destruía e recriava
-      // escudos e placar a cada 12 segundos, sem necessidade.
+      const slide = Math.max(0, Math.trunc(Number(estado.transmissao.slide) || 0)) % SLIDES.length;
+      const trocou = slide !== slideNoAr;
+      const dados = JSON.stringify([estado.id, SLIDES[slide].dados(estado)]);
+      const cab = JSON.stringify([estado.id, estado.placar, estado.config.casa, estado.config.fora,
+        estado.config.competicao, estado.config.local]);
       const cabecalho = painel.querySelector('[data-cabecalho]');
       const subtitulo = `${titulo(estado)} · ${SLIDES[slide].nome}`;
-      const precisaRefazer = forcar || nova !== assinaturaAnterior || !cabecalho.firstElementChild;
 
-      if (precisaRefazer) {
+      // Atualizar uma posse não pode reconstruir os escudos animados do cabeçalho.
+      if (forcar || cab !== assinaturaCabecalho || !cabecalho.firstElementChild) {
         cabecalho.innerHTML = global.DuStats.paineis.cabecalho(estado, subtitulo);
       } else {
         const alvo = cabecalho.querySelector('.subtitulo');
-        if (alvo && alvo.textContent !== subtitulo) trocarTexto(alvo, subtitulo);
+        if (alvo && alvo.textContent !== subtitulo) alvo.textContent = subtitulo;
       }
 
       painel.querySelectorAll('.slide').forEach((secao, indice) => {
         const ativo = indice === slide;
         secao.classList.toggle('ativo', ativo);
-        if (ativo && (trocouDeSlide || forcar || secao.childElementCount === 0)) {
-          SLIDES[indice].desenhar()(secao, estado);
+        if (ativo && (trocou || forcar || dados !== assinaturaCorpo || secao.childElementCount === 0)) {
+          const animar = trocou || forcar || secao.childElementCount === 0;
+          secao.classList.toggle('atualizando', !animar);
+          SLIDES[indice].desenhar()(secao, estado, { animar });
         }
       });
-
       painel.querySelectorAll('[data-pontinhos] i').forEach((ponto, indice) => {
         ponto.classList.toggle('ativo', indice === slide);
       });
+      slideNoAr = slide;
+      assinaturaCorpo = dados;
+      assinaturaCabecalho = cab;
     }
 
-    global.DuStats.overlay.aoModo(modo, painel, {
+    if (sempreVisivel) painel.classList.add('no-ar');
+    else global.DuStats.overlay.aoModo(modo, painel, {
       aoEntrar: (estado) => desenhar(estado, { forcar: true })
     });
 
     global.DuStats.aoEstado((estado) => {
-      if (estado.transmissao.modo !== modo) return;
+      if (!sempreVisivel && estado.transmissao.modo !== modo) return;
       desenhar(estado);
     });
   }
