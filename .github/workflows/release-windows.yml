@@ -2,17 +2,41 @@ name: Publicar release Windows
 
 on:
   push:
-    branches: [codex/bughunt-skins]
+    branches: [codex/faixas-com-escudos]
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: release-faixas-v1.0.2
+  cancel-in-progress: false
 
 jobs:
+  validar:
+    name: Validar — ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - run: npm test
+      - run: npm run fumaca
+
   release:
-    name: DuStats v1.0.1
-    if: github.ref == 'refs/heads/codex/bughunt-skins'
+    name: DuStats v1.0.2
+    needs: validar
+    if: github.ref == 'refs/heads/codex/faixas-com-escudos'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
 
     steps:
       - name: Baixar o código
@@ -23,25 +47,36 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Preservar uma release já publicada
+        id: conferir
+        shell: bash
+        run: |
+          if gh release view v1.0.2 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo 'publicar=false' >> "$GITHUB_OUTPUT"
+          else
+            gh api "repos/$GITHUB_REPOSITORY/releases" --silent
+            echo 'publicar=true' >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Gerar DuStats.exe
+        if: steps.conferir.outputs.publicar == 'true'
         run: npm run exe
 
-      - name: Criar a release e anexar o executável
+      - name: Conferir o pacote isolado
+        if: steps.conferir.outputs.publicar == 'true'
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view v1.0.1 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release create v1.0.1 \
-              --repo "$GITHUB_REPOSITORY" \
-              --target "$GITHUB_SHA" \
-              --title "DuStats v1.0.1 — correções das skins" \
-              --notes "Release do DuStats para Windows.
+          pasta_teste=$(mktemp -d)
+          cp build/dustats.bundle.js "$pasta_teste/dustats.bundle.js"
+          node ferramentas/fumaca.mjs --alvo="$pasta_teste/dustats.bundle.js"
 
-          Inclui as nove skins, correções de contraste, atualização dos painéis durante a transmissão, prévia PNG sincronizada e recuperação da inicialização quando a enumeração de rede falha.
-
-          O executável Windows foi gerado pela CI em Ubuntu com Node.js 22 e empacotado para win-x64. Consulte o PR #2 e docs/BUGHUNT-SKINS.md para os detalhes do bughunt."
-          fi
-          gh release upload v1.0.1 build/DuStats.exe \
-            --repo "$GITHUB_REPOSITORY" \
-            --clobber
+      - name: Publicar executável e verificação SHA-256
+        if: steps.conferir.outputs.publicar == 'true'
+        shell: bash
+        run: |
+          (cd build && sha256sum DuStats.exe > SHA256SUMS.txt)
+          gh release create v1.0.2 build/DuStats.exe build/SHA256SUMS.txt \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --draft \
+            --title 'DuStats v1.0.2 — escudos nas nove faixas' \
+            --notes-file docs/RELEASE-v1.0.2.md
+          gh release edit v1.0.2 --repo "$GITHUB_REPOSITORY" --draft=false --latest

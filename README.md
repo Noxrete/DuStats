@@ -325,13 +325,14 @@ transmissão:
 
 As quatro últimas nasceram de maquetes em que o escudo era decoração: recortado
 em cunha, posto por cima do painel, atravessando o nome do time e a primeira
-linha de estatística. Por isso elas seguem três regras, e há teste para as três:
+linha de estatística. No painel cheio e no brasão principal de identificação,
+valem estas três regras:
 
-1. **O escudo nunca é cortado.** Nada de `clip-path` atravessando o brasão — e
+1. **O brasão principal não é cortado.** Nada de `clip-path` atravessando o brasão — e
    como `clip-path` recorta os descendentes junto, ele também não pode estar em
    nenhum ancestral do escudo. Onde o desenho pede corte diagonal, quem é
-   cortado é o pseudo-elemento que pinta o fundo, não o elemento que contém o
-   escudo.
+   cortado é o fundo ou uma cópia decorativa ampliada do escudo, com o brasão
+   principal preservado.
 2. **O escudo nunca cobre dado, e dado nunca cobre escudo.** Cada um com sua
    coluna. Onde o escudo é marca d'água, a coluna de dados tem margem reservada
    do tamanho dele.
@@ -340,10 +341,43 @@ linha de estatística. Por isso elas seguem três regras, e há teste para as tr
    e a diagonal passam por cima das barras e adulteram a cor do clube.
 
 Para comparar antes de entrar no ar: **`/overlay/skins.html`**. Desenha as peças
-de verdade — o mesmo `paineis.js` e o mesmo `faixa.css` que vão para o OBS —
+de verdade — os mesmos componentes e estilos que vão para o OBS —
 sobre grama de dia e de noite, com um retângulo no canto representando o Placar
 PRO. Não carrega o `bus.js`: não fala com o servidor e não toca na partida
 salva.
+
+### Escudos nas faixas — v1.0.2
+
+As nove faixas mostram os escudos enviados em **Ajustes → Times**. Cada skin
+tem uma moldura e uma entrada próprias:
+
+| Skin | Escudo na faixa |
+| --- | --- |
+| Placar | Selo branco com base na cor do time, entrando de baixo |
+| Vidro | Placa acetinada com um reflexo de luz |
+| Traço | Cantoneiras que se desenham ao redor do brasão |
+| Bandeira | Cópia ampliada em diagonal e selo em primeiro plano |
+| Estádio | Medalhão com aro na cor do time acendendo uma vez |
+| Cápsulas | Medalhão arredondado, sigla em pastilha e pequeno repique |
+| Costura | Bandeirolas diagonais, borda costurada e entrada pelas laterais |
+| Noturno | Brasão ampliado em meia-luz, com selo creme |
+| Diurno | Ficha branca com sombra colorida que encaixa pela lateral |
+
+Sem imagem, ou se ela falhar ao carregar, a sigla identifica o time. Trocar a
+estatística preserva os escudos na tela; mudar a imagem em Ajustes atualiza a
+faixa sem reiniciar seus dez segundos. Os movimentos respeitam a preferência
+de reduzir animações do sistema.
+
+Use **Ver faixas com escudos e animações**, em Ajustes, ou abra
+`/overlay/skins.html?peca=faixa`. A vitrine aproxima as faixas e permite trocar
+a estatística, repetir a entrada, alternar dia/noite e testar sem escudos.
+Para conferir a vitrine sem iniciar o servidor pelo código-fonte, rode
+`node ferramentas/previa-faixas.mjs` e abra `build/previa-faixas.html?peca=faixa`.
+
+A revisão automatizada cobre carregamento, falhas de imagem e transições de
+estado. A validação visual no navegador do ambiente de desenvolvimento foi
+bloqueada por sua política de URLs locais; confira o encaixe e as animações
+na Fonte de Navegador do OBS antes da primeira transmissão com esta versão.
 
 A skin vale para a faixa, o painel do intervalo, o resumo pós-jogo e o card do
 Instagram. Nos três primeiros ela é CSS; no card é canvas, então cada skin tem

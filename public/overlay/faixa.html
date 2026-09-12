@@ -7,27 +7,15 @@
 <link rel="stylesheet" href="/shared/tema.css">
 <link rel="stylesheet" href="/shared/faixa.css">
 <link rel="stylesheet" href="/shared/skins.css">
+<link rel="stylesheet" href="/shared/faixa-escudos.css">
 </head>
 <body class="overlay">
 
-<div id="faixa" class="faixa">
- <div class="conteudo-faixa">
-  <div class="rotulo-faixa"><span id="rotulo"></span></div>
-  <div class="linha-faixa">
-    <span class="time-faixa casa" style="--cor: var(--cor-casa)"><i></i><span id="siglaCasa"></span></span>
-    <span class="valor-faixa esq num" id="valorCasa"></span>
-    <div class="trilho">
-      <span class="casa" id="barraCasa" style="width:50%"></span>
-      <span class="fora" id="barraFora" style="width:50%"></span>
-    </div>
-    <span class="valor-faixa dir num" id="valorFora"></span>
-    <span class="time-faixa fora" style="--cor: var(--cor-fora)"><i></i><span id="siglaFora"></span></span>
-  </div>
- </div>
-</div>
+<div id="faixa" class="faixa"></div>
 
 <script src="/shared/bus.js"></script>
 <script src="/shared/overlay.js"></script>
+<script src="/shared/faixa.js"></script>
 <script>
 'use strict';
 
@@ -51,40 +39,24 @@ for (const [chave, valor] of Object.entries(POSICOES[params.get('pos')] || POSIC
 if (params.get('baixo')) faixa.style.setProperty('--baixo', `${Number(params.get('baixo'))}px`);
 
 let temporizador = null;
+let trocaPendente = null;
 let ultimoDisparo = 0;
 
 function esconder() {
   faixa.classList.remove('no-ar');
   faixa.classList.remove('trocando');
   clearTimeout(temporizador);
+  clearTimeout(trocaPendente);
 }
 
 function preencher(linha, estado) {
-  document.getElementById('rotulo').textContent = linha.rotulo;
-  document.getElementById('siglaCasa').textContent = overlay.sigla(estado.config, 'casa');
-  document.getElementById('siglaFora').textContent = overlay.sigla(estado.config, 'fora');
-
-  const sufixo = linha.sufixo || '';
-  const total = linha.casa + linha.fora;
-  const fatiaCasa = total > 0 ? (linha.casa / total) * 100 : 50;
-
-  const lider = !linha.destacar || linha.casa === linha.fora
-    ? '' : (linha.casa > linha.fora ? 'casa' : 'fora');
-
-  const valorCasa = document.getElementById('valorCasa');
-  const valorFora = document.getElementById('valorFora');
-  valorCasa.textContent = `${linha.casa}${sufixo}`;
-  valorFora.textContent = `${linha.fora}${sufixo}`;
-  valorCasa.className = `valor-faixa esq num ${lider === 'casa' ? 'lider-casa' : ''}`;
-  valorFora.className = `valor-faixa dir num ${lider === 'fora' ? 'lider-fora' : ''}`;
-
-  document.getElementById('barraCasa').style.width = `${fatiaCasa}%`;
-  document.getElementById('barraFora').style.width = `${100 - fatiaCasa}%`;
+  DuStats.faixa.preencher(faixa, linha, estado);
 }
 
 function mostrar(linha, estado, restanteMs = DURACAO) {
   const jaNoAr = faixa.classList.contains('no-ar');
   clearTimeout(temporizador);
+  clearTimeout(trocaPendente);
 
   if (!jaNoAr) {
     preencher(linha, estado);
@@ -96,7 +68,7 @@ function mostrar(linha, estado, restanteMs = DURACAO) {
   // Já estava no ar: some com o conteúdo, troca por baixo e traz de volta.
   // A moldura não se mexe — só o miolo — então a peça não pisca inteira.
   faixa.classList.add('trocando');
-  setTimeout(() => {
+  trocaPendente = setTimeout(() => {
     preencher(linha, estado);
     faixa.classList.remove('trocando');
   }, 140);
@@ -104,6 +76,7 @@ function mostrar(linha, estado, restanteMs = DURACAO) {
 }
 
 DuStats.aoEstado((estado) => {
+  DuStats.faixa.atualizarTimes(faixa, estado);
   const pedido = estado.transmissao.faixa;
 
   // Tela cheia no ar tira a faixa: ela ficaria por baixo do painel do intervalo
