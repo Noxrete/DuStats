@@ -872,6 +872,229 @@
   animation-delay: calc(var(--ordem, 0) * 55ms);
 }
 
+/* ══════════════════════════════════════════════════════════ 9. DESK ══════
+ *
+ * O painel do intervalo deixa de ser um card que gira e passa a ser uma MESA:
+ * os quatro gráficos no ar ao mesmo tempo, em cards próprios, com uma barra de
+ * placar no topo. É a peça para o intervalo e o pós-jogo, quando há tempo de
+ * tela para o espectador ler mais de uma coisa.
+ *
+ * Duas decisões que vale registrar:
+ *
+ *  - É a ÚNICA skin que muda conteúdo, não só aparência. O carrossel.js pinta
+ *    os quatro slides em vez de um quando a skin é esta. A exceção é
+ *    deliberada, e o motivo está no comentário de lá: o painel é uma Fonte de
+ *    Navegador só, e trocar de peça obrigaria o operador a mexer no OBS.
+ *
+ *  - NÃO tem card de destaque de jogador, que a maquete tinha. Ele vivia de
+ *    uma foto do atleta e de estatística individual, e o DuStats não tem nem
+ *    uma nem outra: os lances são registrados por TIME. Um card com foto
+ *    genérica e nota inventada seria a única parte falsa da peça.
+ */
+
+[data-skin="desk"] {
+  --navy-fundo: #0a1024;
+  --navy: #101838;
+  --navy-claro: #17204a;
+  --navy-borda: rgba(255, 255, 255, .10);
+  --raio: 14px;
+  --sombra: 0 30px 90px rgba(0, 0, 0, .66);
+  --texto-fraco: #8b97b8;
+  --card: #121a3c;
+  --card-borda: rgba(255, 255, 255, .09);
+}
+
+/* A mesa é larga: são seis cards, e o card flutuante de 1420 não os acomoda
+   sem apertar os dois gráficos de campo até a ilegibilidade. */
+[data-skin="desk"] .painel-cheio {
+  width: 1740px;
+  height: 884px;
+  padding: 0;
+  background: linear-gradient(180deg, #121a3c 0%, #0a1024 100%);
+  border: 1px solid var(--navy-borda);
+  border-radius: 16px;
+  overflow: hidden;
+}
+[data-skin="desk"] .painel-cheio::before { display: none; }
+[data-skin="desk"] .cena-painel {
+  /* A mesa é alta e o retângulo do Placar PRO mora no canto de cima: 120px de
+     folga é o que mantém os dois sem se tocar. */
+  padding-top: 120px;
+}
+
+/* ---------------------------------------------------------- barra do topo */
+
+/*
+ * A barra do topo é uma GRADE de três colunas — chip de período · competição ·
+ * confronto — e não posicionamento absoluto.
+ *
+ * Na primeira versão o chip e a competição eram absolutos e o confronto tinha
+ * padding para desviar deles. Funcionou com "Estádio Municipal" e quebrou na
+ * hora: "CAMPEONATO AMADOR · ESTÁDIO MUNICIPAL" mais "CHARRUA" não caberiam
+ * nunca, e o nome do time passou por cima do nome do estádio. Em grade, quem
+ * não cabe encolhe em vez de invadir o vizinho.
+ */
+[data-skin="desk"] .cabecalho {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: auto minmax(0, auto) minmax(0, 1fr);
+  align-items: center;
+  gap: 26px;
+  text-align: left;
+  padding: 16px 26px;
+  background: #0c1330;
+  border-bottom: 1px solid var(--navy-borda);
+}
+
+[data-skin="desk"] .competicao {
+  grid-column: 2;
+  background: none;
+  padding: 0;
+  font-size: 17px;
+  letter-spacing: .18em;
+  color: var(--texto-fraco);
+  /* Nome de campeonato longo corta com reticências em vez de empurrar o
+     placar para fora da barra. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-skin="desk"] .confronto {
+  grid-column: 3;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 22px;
+  margin: 0;
+}
+[data-skin="desk"] .confronto .nome-time { font-size: 34px; }
+[data-skin="desk"] .confronto .escudo { width: 56px; height: 56px; }
+[data-skin="desk"] .placar-grande {
+  background: #fff;
+  color: #0c1330;
+  border-radius: 10px;
+  padding: 2px 26px 6px;
+  font-size: 58px;
+}
+[data-skin="desk"] .placar-grande .x { color: #9aa3b8; opacity: 1; font-size: 28px; }
+
+/* O chip do período: primeira coluna da barra, e a única coisa na peça na cor
+   da transmissão. Diz o período de verdade — INTERVALO, FIM DE JOGO — e não um
+   rótulo fixo. */
+[data-skin="desk"] .subtitulo {
+  grid-column: 1;
+  grid-row: 1;
+  margin: 0;
+  padding: 9px 18px 10px;
+  background: var(--acento);
+  color: #04220f;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------ a grade */
+
+[data-skin="desk"] .corpo {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: 1fr 1fr;
+  gap: 14px;
+  margin: 0;
+  padding: 14px;
+  min-height: 0;
+}
+
+/* Cada gráfico vira um card com título. O título sai do nome do painel, que o
+   carrossel.js escreve em data-nome — o mesmo nome que o carrossel mostra no
+   subtítulo, então os dois não podem divergir. */
+[data-skin="desk"] .corpo > * {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 16px 20px 18px;
+  background: var(--card);
+  border: 1px solid var(--card-borda);
+  border-radius: 12px;
+}
+[data-skin="desk"] .corpo > *::before {
+  content: attr(data-nome);
+  flex: 0 0 auto;
+  margin-bottom: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--texto-fraco);
+}
+
+/* A colocação. Comparativo e eventos em cima, porque são os dois que se leem
+   em três segundos; os gráficos embaixo, que pedem mais olhar. */
+[data-skin="desk"] .slide:nth-child(1) { grid-area: 1 / 1 / 2 / 4; }   /* comparativo */
+[data-skin="desk"] .slide:nth-child(4) { grid-area: 1 / 4 / 2 / 7; }   /* gols e cartões */
+[data-skin="desk"] .slide:nth-child(2) { grid-area: 2 / 1 / 3 / 4; }   /* mapa de chutes */
+[data-skin="desk"] .slide:nth-child(3) { grid-area: 2 / 4 / 3 / 7; }   /* pressão */
+/* Com patrocinador, a pressão abre espaço para ele. */
+[data-skin="desk"] [data-com-patrocinio] .slide:nth-child(3) { grid-area: 2 / 4 / 3 / 6; }
+[data-skin="desk"] [data-patrocinio] { grid-area: 2 / 6 / 3 / 7; }
+
+[data-skin="desk"] [data-patrocinio] {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  background: linear-gradient(150deg, #17204a, #101838);
+}
+
+/* Os pontinhos do carrossel não têm sentido com tudo no ar ao mesmo tempo. */
+[data-skin="desk"] .pontinhos { display: none; }
+
+/* ------------------------------------------------- os gráficos no card */
+
+/* Dentro do card cada gráfico ocupa o que sobrou do título, e nada estica além
+   da caixa: `min-height: 0` em toda a cadeia é o que impede um SVG de empurrar
+   o card e furar a grade. */
+[data-skin="desk"] .slide.ativo {
+  animation: entrarEmCascata 420ms cubic-bezier(.16, 1, .3, 1) both;
+  animation-delay: calc(var(--ordem, 0) * 70ms);
+}
+[data-skin="desk"] .slide > *:not(:first-child) { min-height: 0; }
+
+[data-skin="desk"] .comparativo {
+  flex: 1 1 auto;
+  gap: 0;
+  align-content: space-evenly;
+}
+[data-skin="desk"] .linha-comp { grid-template-columns: 72px 1fr 72px; gap: 14px; }
+[data-skin="desk"] .linha-comp .valor { font-size: 27px; }
+[data-skin="desk"] .linha-comp .rotulo-linha { font-size: 13px; margin-bottom: 5px; }
+[data-skin="desk"] .trilho { height: 9px; }
+
+[data-skin="desk"] .mapas { flex: 1 1 auto; gap: 24px; }
+[data-skin="desk"] .mapa-topo { margin-bottom: 8px; }
+[data-skin="desk"] .mapa-topo .escudo { width: 30px; height: 30px; }
+[data-skin="desk"] .mapa-nome { font-size: 17px; }
+[data-skin="desk"] .mapa-total { font-size: 14px; }
+[data-skin="desk"] .mapa-total strong { font-size: 16px; }
+[data-skin="desk"] .mapa-campo svg { max-height: 100%; }
+[data-skin="desk"] .mapa-nota { font-size: 13px; min-height: 18px; margin-top: 6px; }
+[data-skin="desk"] .mapa-nota strong { font-size: 15px; }
+
+[data-skin="desk"] .grafico-pressao,
+[data-skin="desk"] .grafico-tempo { flex: 1 1 auto; max-height: 100%; min-height: 0; }
+[data-skin="desk"] .legenda,
+[data-skin="desk"] .legenda-pressao { font-size: 13px; gap: 18px; margin-top: 8px; }
+[data-skin="desk"] .vazio { font-size: 20px; }
+
+[data-skin="desk"] .cena-painel.no-ar .painel-cheio {
+  animation: subir 560ms cubic-bezier(.2, .9, .2, 1) both;
+}
+
 /* A COR DO TEXTO PRECISA SER DITA NA PEÇA, não só no token.
  *
  * `body { color: var(--texto) }` é resolvido no body. Redefinir --texto num

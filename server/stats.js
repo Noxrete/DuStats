@@ -198,7 +198,11 @@ function derivar(eventos, esporte, wallAgora = Date.now()) {
         tTotal: marca.tTotal,
         periodo: marca.periodo,
         cor: evento.meta?.cor || null,
-        contra: Boolean(evento.meta?.contra)
+        contra: Boolean(evento.meta?.contra),
+        // Quem fez, se o apontador teve tempo de digitar. É o que transforma
+        // "12' Gol · Charrua" em post de Instagram; sem isso a linha continua
+        // verdadeira, só mais seca.
+        autor: (evento.meta?.autor || '').trim() || null
       });
     }
   }

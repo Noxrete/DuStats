@@ -145,7 +145,8 @@ const SKINS = [
   ['capsulas', 'Cápsulas', 'lona: cada estatística numa pastilha própria'],
   ['costura',  'Costura',  'confronto: dois campos de cor, um de cada clube'],
   ['noturno',  'Noturno',  'refletor: escuro com os escudos inteiros nas pontas'],
-  ['diurno',   'Diurno',   'sol: cartaz claro, barras crescendo do centro']
+  ['diurno',   'Diurno',   'sol: cartaz claro, barras crescendo do centro'],
+  ['desk',     'Desk',     'mesa: os quatro gráficos no ar ao mesmo tempo']
 ];
 
 /*
@@ -162,6 +163,38 @@ const ESTADO = {
     fora: { nome: 'Guarapuava', sigla: 'GUA', cor: '#1f8f3a', corTexto: '#fff', escudo: '/demo/guarapuava.png' }
   },
   placar: { casa: 2, fora: 1 },
+  patrocinador: 'Padaria do Bairro',
+  /*
+   * A Desk põe os QUATRO painéis no ar de uma vez, e os outros três leem campos
+   * que o comparativo não usa. Sem estes dados a vitrine mostraria a Desk com
+   * um card desenhado e três vazios — exatamente o tipo de meia-verdade que
+   * esta página existe para não contar.
+   */
+  totais: {
+    casa: { finalizacoes: 11, noGol: 6 },
+    fora: { finalizacoes: 7, noGol: 3 }
+  },
+  chutes: [
+    { equipe: 'casa', x: 0.82, y: 0.46, desfecho: 'gol',       minuto: '13' },
+    { equipe: 'casa', x: 0.76, y: 0.58, desfecho: 'no_gol',    minuto: '21' },
+    { equipe: 'casa', x: 0.88, y: 0.40, desfecho: 'gol',       minuto: '68' },
+    { equipe: 'casa', x: 0.70, y: 0.35, desfecho: 'trave',     minuto: '44' },
+    { equipe: 'casa', x: 0.79, y: 0.62, desfecho: 'bloqueada', minuto: '52' },
+    { equipe: 'fora', x: 0.84, y: 0.52, desfecho: 'gol',       minuto: '35' },
+    { equipe: 'fora', x: 0.72, y: 0.44, desfecho: 'fora',      minuto: '40' },
+    { equipe: 'fora', x: 0.77, y: 0.60, desfecho: 'no_gol',    minuto: '77' }
+  ],
+  momentum: [
+    { casa: 2, fora: 1 }, { casa: 4, fora: 1 }, { casa: 1, fora: 3 },
+    { casa: 3, fora: 2 }, { casa: 5, fora: 1 }, { casa: 2, fora: 4 },
+    { casa: 1, fora: 2 }, { casa: 4, fora: 3 }, { casa: 3, fora: 1 }
+  ],
+  linhaDoTempo: [
+    { tipo: 'gol',    equipe: 'casa', minuto: '13', tTotal: 13 * 60000, contra: false, autor: '#9 Rafael' },
+    { tipo: 'cartao', equipe: 'fora', minuto: '23', tTotal: 23 * 60000, cor: 'amarelo' },
+    { tipo: 'gol',    equipe: 'fora', minuto: '35', tTotal: 35 * 60000, contra: false, autor: '#8 Lima' },
+    { tipo: 'gol',    equipe: 'casa', minuto: '68', tTotal: 68 * 60000, contra: false, autor: '#10 Matheus' }
+  ],
   comparativo: [
     { rotulo: 'Posse de bola', casa: 58, fora: 42, sufixo: '%', barra: true, destacar: true },
     { rotulo: 'Finalizações', casa: 11, fora: 7, barra: true, destacar: true },
@@ -204,10 +237,10 @@ function montar() {
       <div class="palco" data-skin="${id}">
         <div class="grama"></div>
         <div class="placarpro">Placar PRO</div>
-        <div class="cena-painel no-ar">
+        <div class="cena-painel no-ar"${id === 'desk' ? ' data-com-patrocinio="sim"' : ''}>
           <div class="painel-cheio">
             <div data-cabecalho></div>
-            <div class="corpo"><div class="slide ativo" data-comparativo></div></div>
+            <div class="corpo">${corpoDaSkin(id)}</div>
             <div class="pontinhos"><i class="ativo"></i><i></i><i></i><i></i></div>
           </div>
         </div>
@@ -216,9 +249,10 @@ function montar() {
     </figure>`).join('');
 
   for (const palco of grade.querySelectorAll('.palco')) {
-    palco.querySelector('[data-cabecalho]').innerHTML =
-      DuStats.paineis.cabecalho(ESTADO, 'Estatísticas do 1º tempo');
-    DuStats.paineis.comparativo(palco.querySelector('[data-comparativo]'), ESTADO);
+    const desk = palco.dataset.skin === 'desk';
+    palco.querySelector('[data-cabecalho]').innerHTML = DuStats.paineis.cabecalho(
+      ESTADO, desk ? 'INTERVALO' : 'Estatísticas do 1º tempo');
+    desenharPaineis(palco);
   }
 
   // As cores do confronto vêm da config, como no ar — quem escreve normalmente
@@ -231,6 +265,32 @@ function montar() {
   raiz.setProperty('--escudo-fora', `url("${ESTADO.config.fora.escudo}")`);
 
   ajustarEscala();
+}
+
+/*
+ * Os painéis de cada skin. A Desk é a única que põe os quatro no ar de uma vez,
+ * e é o carrossel.js que faz isso no ar — aqui a marcação é montada à mão, com
+ * os MESMOS pintores de paineis.js, para a vitrine continuar desenhando a peça
+ * de verdade em vez de uma imitação dela.
+ */
+const PAINEIS_DA_DESK = [
+  ['Comparativo',    'comparativo'],
+  ['Mapa de chutes', 'mapaDeChutes'],
+  ['Pressão',        'pressao'],
+  ['Gols e cartões', 'linhaDoTempo']
+];
+
+function corpoDaSkin(id) {
+  if (id !== 'desk') return '<div class="slide ativo" data-painel="comparativo"></div>';
+  return PAINEIS_DA_DESK.map(([nome, pintor]) =>
+    `<div class="slide ativo" data-nome="${nome}" data-painel="${pintor}"></div>`).join('')
+    + `<div data-patrocinio data-nome="Patrocinador">${ESTADO.patrocinador}</div>`;
+}
+
+function desenharPaineis(palco) {
+  for (const secao of palco.querySelectorAll('[data-painel]')) {
+    DuStats.paineis[secao.dataset.painel](secao, ESTADO);
+  }
 }
 
 /** O palco é 1920 × 1080 e cabe na coluna por escala, nunca por medida menor. */
@@ -262,9 +322,7 @@ document.getElementById('btRepetir').addEventListener('click', () => {
   for (const p of peças) p.classList.remove('no-ar');
   requestAnimationFrame(() => requestAnimationFrame(() => {
     for (const p of peças) p.classList.add('no-ar');
-    for (const palco of document.querySelectorAll('.palco')) {
-      DuStats.paineis.comparativo(palco.querySelector('[data-comparativo]'), ESTADO);
-    }
+    for (const palco of document.querySelectorAll('.palco')) desenharPaineis(palco);
   }));
 });
 

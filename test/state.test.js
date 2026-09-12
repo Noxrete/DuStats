@@ -185,3 +185,12 @@ test('partida salva antes das skins reabre com a aparência padrão', () => {
 test('config nova preserva a skin escolhida', () => {
   assert.equal(storage.comPadroes({ skin: 'estadio' }).skin, 'estadio');
 });
+
+test('partida salva antes do patrocinador reabre sem patrocinador, não sem campo', () => {
+  // A diferença importa: `undefined` faria o card de patrocínio da skin Desk e
+  // o rodapé do post de resumo escreverem "undefined" no ar.
+  const antiga = { competicao: 'Amador' };
+  assert.equal(storage.comPadroes(antiga).patrocinador, '');
+  assert.equal(storage.comPadroes({ patrocinador: 'Padaria do Bairro' }).patrocinador,
+    'Padaria do Bairro');
+});

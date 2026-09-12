@@ -53,6 +53,7 @@
 
     const skins = {
       placar: {
+        palco: '#141d45',        // o navy do meio do gradiente
         texto: '#fff',
         separador: 'rgba(255,255,255,.3)',
         rodape: '#6a78a4',
@@ -73,6 +74,7 @@
       // Claro e arejado, com um facho de luz atravessando: é o que sobra da
       // ideia de lâmina translúcida quando não há vídeo para atravessar.
       vidro: {
+        palco: '#18224a',        // o azul do meio da lâmina
         texto: '#fff',
         separador: 'rgba(255,255,255,.3)',
         rodape: '#6a78a4',
@@ -98,6 +100,7 @@
 
       // Sem blocos e sem faixa: só o fundo mais escuro possível e os filetes.
       traco: {
+        palco: '#05070f',        // o quase-preto da ausência
         texto: '#fff',
         separador: 'rgba(255,255,255,.3)',
         rodape: '#6a78a4',
@@ -113,6 +116,7 @@
       },
 
       bandeira: {
+        palco: '#0e1533',        // o navy da bandeira
         texto: '#fff',
         separador: 'rgba(255,255,255,.3)',
         rodape: '#6a78a4',
@@ -148,6 +152,7 @@
       },
 
       estadio: {
+        palco: '#0a0f19',        // o quase-preto do refletor
         texto: '#fff',
         separador: 'rgba(255,255,255,.3)',
         rodape: '#6a78a4',
@@ -190,6 +195,7 @@
       // no meio do desenho, o que num fundo de linho apaga o placar inteiro.
 
       capsulas: {
+        palco: '#e8e2d2',        // o linho cru
         texto: '#16180f',
         textoPlacar: '#f4f1e8',      // o bloco do placar é preto sobre linho
         textoFraco: '#6f776a',
@@ -207,6 +213,7 @@
       },
 
       costura: {
+        palco: '#e8e2d2',        // o linho cru
         texto: '#16180f',
         textoPlacar: '#f4f1e8',
         textoTopo: 'rgba(255,255,255,.86)',   // a linha de competição cai sobre os campos de cor
@@ -241,6 +248,7 @@
       },
 
       noturno: {
+        palco: '#141610',        // o quase-preto da lona à noite
         texto: '#e8e2d2',
         textoFraco: '#8d9a86',
         separador: 'rgba(232,226,210,.3)',
@@ -258,7 +266,27 @@
         }
       },
 
+      // A Desk é a peça grande do intervalo; no card do Instagram, que é um
+      // quadrado, ela usa a mesma paleta de navy escuro do painel.
+      desk: {
+        palco: '#0d1430',
+        texto: '#fff',
+        textoPlacar: '#0c1330',   // o bloco do placar da Desk é branco
+        separador: 'rgba(12,19,48,.35)',
+        rodape: '#6a78a4',
+        textoFraco: '#8b97b8',
+        bloco: '#ffffff',
+        trilho: 'rgba(0,0,0,.34)',
+        divisor: 'rgba(255,255,255,.10)',
+        fundo(ctx) {
+          ctx.fillStyle = gradiente(ctx, [[0, '#121a3c'], [1, '#0a1024']]);
+          ctx.fillRect(0, 0, LADO, LADO);
+        },
+        faixaTopo(ctx) { caixa(ctx, 0, 0, LADO, 6, 0, acento); }
+      },
+
       diurno: {
+        palco: '#f7f6f2',        // o branco do cartaz
         texto: '#11141a',
         textoTopo: 'rgba(255,255,255,.78)',   // a linha de competição mora na tarja escura
         textoFraco: '#6b7280',
@@ -316,7 +344,13 @@
     // espaçamento das linhas em caixa alta é feito letra a letra.
     const letras = [...texto];
     const largura = letras.reduce((soma, l) => soma + ctx.measureText(l).width + espaco, -espaco);
-    let cursor = alinha === 'center' ? x - largura / 2 : x;
+    // `alinha: 'right'` precisa ser tratado aqui também. Sem esta linha ele caía
+    // no ramo do alinhamento à esquerda e a linha vazava pela borda direita —
+    // foi assim que "CAMPEONATO AMADOR" saiu cortado nos quatro formatos do
+    // Match Pack, que são os primeiros a alinhar texto espaçado à direita.
+    let cursor = alinha === 'center' ? x - largura / 2
+      : alinha === 'right' ? x - largura
+      : x;
     for (const letra of letras) {
       ctx.fillText(letra, cursor, y);
       cursor += ctx.measureText(letra).width + espaco;
@@ -452,4 +486,16 @@
 
   global.DuStats = global.DuStats || {};
   global.DuStats.cartao = { desenhar, baixar, LADO };
+
+  /*
+   * As primitivas ficam expostas porque o Match Pack (social.js) desenha em
+   * canvas exatamente como este arquivo: a alternativa era uma segunda cópia
+   * de `escreve` com espaçamento letra a letra, de `desenharEscudo` com o
+   * substituto de sigla, e — pior — de nove paletas de skin. Duas cópias de
+   * paleta divergem no dia em que alguém mexe numa cor, e aí o post deixa de
+   * casar com o que foi ao ar.
+   */
+  global.DuStats.pincel = {
+    FONTE, escreve, caixa, carregarImagem, desenharEscudo, paletaDaSkin, corDoTime
+  };
 })(window);

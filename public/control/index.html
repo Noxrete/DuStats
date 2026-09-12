@@ -108,6 +108,36 @@
      de que ninguém está marcando antes que o intervalo chegue. */
   .posse .barrinha { transition: opacity 300ms ease; }
   .posse.crua .barrinha { opacity: .28; }
+  #modalAutor { display: block; margin: 4px 0 12px; }
+  .rotulo-autor {
+    display: block; margin-bottom: 6px;
+    font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--texto-fraco);
+  }
+  #autorDoGol { width: 100%; }
+
+  /* ------------------------------------------------------------- Social */
+  .formatos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .formatos button {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
+    padding: 13px 14px; border-radius: 10px;
+    background: var(--navy-claro); border: 1px solid var(--navy-borda);
+    color: #fff; font-family: var(--fonte); text-align: left; cursor: pointer;
+  }
+  .formatos button[aria-pressed="true"] { border-color: var(--acento); background: #1d2a5e; }
+  .formatos .fmt-nome { font-size: 15px; font-weight: 700; }
+  .formatos .fmt-nota { font-size: 12px; color: var(--texto-fraco); }
+
+  /* A prévia é a imagem de verdade, reduzida — não uma maquete. É o que
+     garante que o que o operador aprova é o que vai para o Instagram. */
+  .previa {
+    display: grid; place-items: center;
+    min-height: 280px; padding: 14px;
+    background: #05070b; border-radius: 10px; border: 1px solid var(--navy-borda);
+  }
+  .previa img { max-width: 100%; max-height: 62vh; border-radius: 6px; display: block; }
+  .previa-vazia { font-size: 13px; color: var(--texto-fraco); letter-spacing: .08em; text-transform: uppercase; }
+
   .checagens { list-style: none; margin: 0; padding: 0; }
   /* Duas colunas, não três: em tela de celular o nome e o detalhe lado a lado
      quebravam em três linhas cada e o cartão virava uma parede de texto. */
@@ -237,11 +267,19 @@
 
   nav {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
-    display: grid; grid-template-columns: repeat(3, 1fr);
+    /* Quatro colunas de largura igual, não `repeat(3, 1fr)`. Com a quarta aba
+       a grade de três empurrava "Ajustes" para uma segunda fileira, e a barra
+       de navegação passava a comer 120px de tela num celular. */
+    display: grid; grid-template-columns: repeat(4, 1fr);
     background: var(--navy); border-top: 1px solid var(--navy-borda);
     padding-bottom: env(safe-area-inset-bottom);
   }
-  nav button { background: none; border-radius: 0; padding: 16px 4px; font-size: 13px; color: var(--texto-fraco); }
+  /* 12px e sem espaçamento de letra: é o que faz "Ajustes" caber numa coluna
+     de quatro em tela de 360px, que é o celular mais estreito em uso. */
+  nav button {
+    background: none; border-radius: 0; padding: 16px 2px;
+    font-size: 12px; letter-spacing: 0; color: var(--texto-fraco);
+  }
   nav button[aria-selected="true"] { color: #fff; box-shadow: inset 0 3px 0 var(--acento); }
 
   /* --------------------------------------------------------------- modal */
@@ -448,6 +486,35 @@
     </div>
   </section>
 
+  <!-- ----------------------------------------------------------- SOCIAL -->
+  <section class="aba" id="aba-social" hidden>
+    <div class="cartao">
+      <h3>Match Pack</h3>
+      <p class="explica">
+        O jogo virando post, já no tamanho que o Instagram usa. O arquivo nasce
+        pronto: nada de print de tela com a barra do navegador, nada de recortar
+        imagem no celular na beira do campo.
+      </p>
+      <div class="formatos" id="formatos"></div>
+    </div>
+
+    <div class="cartao" id="cartaoOpcao" hidden>
+      <h3 id="tituloOpcao">Qual estatística</h3>
+      <select id="opcaoPost"></select>
+    </div>
+
+    <div class="cartao">
+      <div class="previa" id="previa">
+        <span class="previa-vazia">montando a prévia…</span>
+      </div>
+      <p class="aviso-inline" id="notaPost"></p>
+      <div class="modal-acoes">
+        <button class="b-fantasma" id="btJpeg">Baixar JPEG</button>
+        <button class="b-fantasma" id="btPng">Baixar PNG</button>
+      </div>
+    </div>
+  </section>
+
   <!-- ---------------------------------------------------------- AJUSTES -->
   <section class="aba" id="aba-ajustes" hidden>
     <!-- Primeiro item da aba de propósito: é a última coisa a conferir antes
@@ -488,6 +555,13 @@
       <input type="text" id="cfgCompeticao" placeholder="Campeonato Amador">
       <label for="cfgLocal">Local</label>
       <input type="text" id="cfgLocal" placeholder="Campo do Bairro">
+      <label for="cfgPatrocinador">Patrocinador (opcional)</label>
+      <input type="text" id="cfgPatrocinador" placeholder="Padaria do Bairro" maxlength="60">
+      <p class="aviso-inline">
+        Aparece no card de patrocínio do painel do intervalo (skin Desk) e no
+        rodapé do post de resumo. Em branco, os dois não aparecem — um bloco
+        “seu patrocínio aqui” no ar é pior que nenhum.
+      </p>
     </div>
 
     <div class="cartao">
@@ -511,6 +585,7 @@
         <option value="costura">Costura — dois campos de cor, um de cada clube</option>
         <option value="noturno">Noturno — escuro, escudos grandes nas pontas</option>
         <option value="diurno">Diurno — cartaz claro, barras do centro para fora</option>
+        <option value="desk">Desk — os quatro gráficos ao mesmo tempo, em cards</option>
       </select>
       <p class="aviso-inline">
         Veja as cinco lado a lado, sobre grama de dia e de noite, em
@@ -556,6 +631,7 @@
 <nav>
   <button data-aba="lances" aria-selected="true">Lances</button>
   <button data-aba="ar" aria-selected="false">No ar</button>
+  <button data-aba="social" aria-selected="false">Social</button>
   <button data-aba="ajustes" aria-selected="false">Ajustes</button>
 </nav>
 
@@ -567,6 +643,14 @@
       <div class="rumo">▲ Gol</div>
       <div class="dica">Toque onde saiu o chute</div>
     </div>
+    <!-- Quem fez o gol, sempre OPCIONAL e sempre depois: o placar já subiu
+         antes deste campo existir na tela. Alimenta a linha do tempo e os
+         posts do Match Pack. -->
+    <label id="modalAutor" hidden>
+      <span class="rotulo-autor">Quem fez (opcional)</span>
+      <input type="text" id="autorDoGol" placeholder="#9 Rafael" autocomplete="off"
+             enterkeyhint="done" maxlength="40">
+    </label>
     <div class="modal-acoes" id="modalAcoes"></div>
   </div>
 </dialog>
@@ -576,6 +660,9 @@
 <script src="/shared/campo.js"></script>
 <script src="/shared/qr.js"></script>
 <script src="/shared/conferencia.js"></script>
+<script src="/shared/overlay.js"></script>
+<script src="/shared/cartao.js"></script>
+<script src="/shared/social.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

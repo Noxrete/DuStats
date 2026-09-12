@@ -198,7 +198,43 @@ Pondo estatística no ar:
   as setas seguram ou pulam um slide.
 - No fim: **Próximo período** até `Fim de jogo`, e **No ar** → **Resumo**.
 
-### Sincronizar o relógio com o Placar PRO
+### Match Pack: o jogo virando post
+
+A aba **Social** exporta a partida em imagem, já no tamanho que o Instagram usa:
+
+| Formato | Medida | Para quê |
+|---|---|---|
+| **Feed 4:5** | 1080 × 1350 | resumo completo: placar, estatísticas e os gols |
+| **Quadrado 1:1** | 1080 × 1080 | uma estatística só, para postar no meio do jogo |
+| **Story 9:16** | 1080 × 1920 | o gol, com o minuto, para subir na hora |
+| **Resumo final** | 1080 × 1080 | o resultado, para carrossel ou feed |
+
+O arquivo nasce no formato exato, em JPEG ou PNG. A alternativa seria o operador
+printar a tela e recortar no celular à beira do campo — e print sai no tamanho
+do monitor, com a barra do navegador, e o Instagram recorta justamente a borda,
+onde moram placar, escudo e patrocínio. As medidas estão em teste: medida errada
+é o defeito mais caro aqui, porque só aparece depois de publicado.
+
+A prévia na aba é a **imagem de verdade**, reduzida por CSS — não uma maquete em
+HTML. Maquete mente na primeira vez que alguém mexe no desenho do canvas, e aí o
+operador aprova uma coisa e posta outra. Ela se refaz quando o conteúdo muda (um
+gol, uma estatística, a skin), não a cada pacote de estado: redesenhar um canvas
+de 1080 × 1920 a cada 2 s seria tirar CPU do encoder do OBS.
+
+Os quatro usam a **mesma pele da skin** que foi ao ar, pelo mesmo `paletaDaSkin`
+do card de resumo — o post precisa parecer do mesmo sistema que a transmissão.
+
+Duas coisas que os formatos não têm, e é melhor dizer do que fingir:
+
+- **Foto.** Nem de estádio, nem de jogador. O DuStats roda offline no campo e não
+  tem banco de imagem; o que dá profundidade é o escudo em marca d'água e a grama
+  pintada.
+- **Nome de jogador**, a menos que o apontador tenha digitado. O gol aceita um
+  autor **opcional**, perguntado depois de o placar já ter subido — a mesma regra
+  do local do chute. Sem ele o post mostra o minuto e o time, que é informação
+  verdadeira.
+
+## Sincronizar o relógio com o Placar PRO
 
 O DuStats tem cronômetro próprio porque posse de bola é medida em tempo e cada
 lance precisa do minuto em que caiu. Mas quem aparece na tela é o do Placar PRO,
@@ -308,7 +344,7 @@ sábado à noite conferido no domingo de manhã passaria batido.
 
 ## Aparência no ar
 
-Nove skins, escolhidas por partida na aba **Ajustes**, ao lado da cor da
+Dez skins, escolhidas por partida na aba **Ajustes**, ao lado da cor da
 transmissão:
 
 | Skin | A ideia |
@@ -322,6 +358,7 @@ transmissão:
 | **Costura** | confronto — dois campos de cor, um de cada clube, unidos por uma costura |
 | **Noturno** | refletor — escuro, com os escudos inteiros em marca d'água nas pontas |
 | **Diurno** | sol — cartaz claro, rótulo no meio e as barras crescendo dele para fora |
+| **Desk** | mesa — os quatro gráficos no ar ao mesmo tempo, em cards, com barra de placar |
 
 As quatro últimas nasceram de maquetes em que o escudo era decoração: recortado
 em cunha, posto por cima do painel, atravessando o nome do time e a primeira
@@ -338,6 +375,18 @@ linha de estatística. Por isso elas seguem três regras, e há teste para as tr
 3. **Decoração é pseudo-elemento atrás do conteúdo.** Pseudo-elemento
    posicionado pinta acima do fluxo normal; sem uma camada explícita, a costura
    e a diagonal passam por cima das barras e adulteram a cor do clube.
+
+A **Desk** é a única que muda conteúdo, e não só aparência: ela põe os quatro
+gráficos no ar ao mesmo tempo em vez de girar o carrossel. A exceção é
+deliberada — o painel do intervalo é *uma* Fonte de Navegador no OBS, e fazer
+disto uma peça separada obrigaria o operador a reconfigurar o OBS para trocar
+de aparência; trocando pela skin, ele troca no celular. Ela também é a única com
+card de patrocinador, que só aparece com `patrocinador` preenchido nos Ajustes.
+
+O que a Desk **não** tem, e a maquete que a originou tinha: card de destaque de
+jogador. Ele vivia de uma foto do atleta e de estatística individual, e o
+DuStats não tem nem uma nem outra — os lances são registrados por time. Um card
+com foto genérica e nota inventada seria a única parte falsa da peça.
 
 Para comparar antes de entrar no ar: **`/overlay/skins.html`**. Desenha as peças
 de verdade — o mesmo `paineis.js` e o mesmo `faixa.css` que vão para o OBS —

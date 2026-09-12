@@ -95,10 +95,15 @@ function desenharMarca() {
   campoSvg.appendChild(ponto);
 }
 
-function abrirModal({ titulo, texto, comCampo, acoes }) {
+function abrirModal({ titulo, texto, comCampo, comAutor, acoes }) {
   $('#modalTitulo').textContent = titulo;
   $('#modalTexto').textContent = texto || '';
   prepararCampo(Boolean(comCampo));
+
+  // O campo de autor é limpo a cada abertura: o nome do gol anterior aparecendo
+  // pré-preenchido no gol seguinte credita o gol à pessoa errada.
+  $('#modalAutor').hidden = !comAutor;
+  $('#autorDoGol').value = '';
 
   const container = $('#modalAcoes');
   container.innerHTML = '';
@@ -111,7 +116,7 @@ function abrirModal({ titulo, texto, comCampo, acoes }) {
     if (acao.corTexto) botao.style.color = acao.corTexto;
     botao.addEventListener('click', () => {
       confirmarComVibracao();
-      acao.acao(marcaAtual);
+      acao.acao(marcaAtual, $('#autorDoGol').value.trim());
       modal.close();
     });
     container.appendChild(botao);
@@ -138,13 +143,24 @@ function abrirFinalizacao(equipe) {
 }
 
 function abrirDetalheDoGol(equipe, cid) {
+  /* Um PATCH só com o que o operador de fato preencheu: mandar `meta` vazio
+     apagaria o que já estivesse gravado no evento. */
+  const ajuste = (local, autor, extra = {}) => {
+    const meta = { ...extra };
+    if (autor) meta.autor = autor;
+    const dados = { ...(local || {}) };
+    if (Object.keys(meta).length > 0) dados.meta = meta;
+    if (Object.keys(dados).length > 0) DuStats.ajustarPorCid(cid, dados);
+  };
+
   abrirModal({
     titulo: `⚽ Gol do ${nomeDoTime(equipe)}`,
-    texto: 'Já está no placar. Marque onde saiu, se der tempo.',
+    texto: 'Já está no placar. O resto é opcional, se der tempo.',
     comCampo: true,
+    comAutor: true,
     acoes: [
-      { rotulo: 'Pronto', acao: (local) => { if (local) DuStats.ajustarPorCid(cid, local); } },
-      { rotulo: 'Foi gol contra', fantasma: true, acao: (local) => DuStats.ajustarPorCid(cid, { ...(local || {}), meta: { contra: true } }) }
+      { rotulo: 'Pronto', acao: (local, autor) => ajuste(local, autor) },
+      { rotulo: 'Foi gol contra', fantasma: true, acao: (local, autor) => ajuste(local, autor, { contra: true }) }
     ]
   });
 }
@@ -203,6 +219,10 @@ for (const botao of $$('nav button')) {
     for (const outro of $$('nav button')) outro.setAttribute('aria-selected', String(outro === botao));
     for (const secao of $$('.aba')) secao.hidden = secao.id !== `aba-${botao.dataset.aba}`;
     $('#btDesfazer').hidden = botao.dataset.aba !== 'lances' || !ultimoEstado?.paraDesfazer;
+    // A prévia do post custa quatro desenhos em canvas de até 1080 × 1920.
+    // Desenhar isso a cada pacote de estado, com a aba fechada, seria queimar
+    // CPU do PC que está codificando o vídeo.
+    if (botao.dataset.aba === 'social') desenharPrevia();
   });
 }
 
@@ -363,6 +383,7 @@ function preencherAjustes(estado) {
   definir('#cfgLocal', estado.config.local || '');
   definir('#cfgAcento', estado.config.acento || '#17b64a');
   definir('#cfgSkin', estado.config.skin || 'placar');
+  definir('#cfgPatrocinador', estado.config.patrocinador || '');
 
   for (const lado of ['casa', 'fora']) {
     definir(`#nome-${lado}`, estado.config[lado]?.nome || '');
@@ -381,7 +402,8 @@ function montarAjustes(estado) {
         competicao: $('#cfgCompeticao').value,
         local: $('#cfgLocal').value,
         acento: $('#cfgAcento').value,
-        skin: $('#cfgSkin').value
+        skin: $('#cfgSkin').value,
+        patrocinador: $('#cfgPatrocinador').value.trim()
       });
     });
   }
@@ -510,6 +532,132 @@ function desenharUltimos(estado) {
   }
 }
 
+// ------------------------------------------------------------ Match Pack
+//
+// A prévia é a IMAGEM DE VERDADE, reduzida por CSS — não uma maquete em HTML.
+// Maquete mente na primeira vez que alguém mexe no desenho do canvas, e aí o
+// operador aprova uma coisa e posta outra.
+
+let formatoAtual = 'feed';
+let previaEmCurso = false;      // um desenho por vez; o canvas é grande
+let previaPendente = false;
+let urlDaPrevia = null;
+
+function montarFormatos() {
+  const alvo = $('#formatos');
+  if (!alvo || alvo.dataset.montado === 'sim') return;
+  alvo.dataset.montado = 'sim';
+
+  alvo.innerHTML = Object.entries(DuStats.social.FORMATOS).map(([chave, f]) => `
+    <button data-formato="${chave}" aria-pressed="${chave === formatoAtual}">
+      <span class="fmt-nome">${f.nome}</span>
+      <span class="fmt-nota">${escapar(f.nota)}</span>
+    </button>`).join('');
+
+  for (const botao of alvo.querySelectorAll('button')) {
+    botao.addEventListener('click', () => {
+      formatoAtual = botao.dataset.formato;
+      for (const outro of alvo.querySelectorAll('button')) {
+        outro.setAttribute('aria-pressed', String(outro === botao));
+      }
+      montarOpcoes();
+      desenharPrevia();
+    });
+  }
+}
+
+/**
+ * Dois formatos precisam de uma escolha que o estado não decide sozinho: qual
+ * estatística vai no quadrado, e qual gol vai no story. Os outros dois não
+ * perguntam nada, e o seletor desaparece em vez de ficar ali desabilitado.
+ */
+function montarOpcoes() {
+  const cartao = $('#cartaoOpcao');
+  const select = $('#opcaoPost');
+  const estado = ultimoEstado;
+  if (!estado) return;
+
+  if (formatoAtual === 'quadrado') {
+    const linhas = DuStats.social.linhasDoPost(estado, 20);
+    cartao.hidden = linhas.length === 0;
+    $('#tituloOpcao').textContent = 'Qual estatística';
+    select.innerHTML = linhas.map((l) =>
+      `<option value="${escapar(l.rotulo)}">${escapar(l.rotulo)} — ${l.casa}${l.sufixo || ''} × ${l.fora}${l.sufixo || ''}</option>`
+    ).join('');
+    return;
+  }
+
+  if (formatoAtual === 'story') {
+    const gols = DuStats.social.golsDoJogo(estado);
+    cartao.hidden = gols.length === 0;
+    $('#tituloOpcao').textContent = 'Qual gol';
+    select.innerHTML = gols.map((g, i) => {
+      const time = estado.config[g.equipe]?.nome || g.equipe;
+      return `<option value="${i}"${i === gols.length - 1 ? ' selected' : ''}>${g.minuto}' — ${escapar(time)}${g.contra ? ' (contra)' : ''}</option>`;
+    }).join('');
+    return;
+  }
+
+  cartao.hidden = true;
+}
+
+function opcoesDoFormato() {
+  const valor = $('#opcaoPost')?.value;
+  if (formatoAtual === 'quadrado') return { rotulo: valor };
+  if (formatoAtual === 'story') return { golIndice: Number(valor) };
+  return {};
+}
+
+async function desenharPrevia() {
+  if ($('#aba-social').hidden || !ultimoEstado) return;
+  // Clicar em três formatos seguidos não deve enfileirar três desenhos: o
+  // último pedido é o que importa.
+  if (previaEmCurso) { previaPendente = true; return; }
+  previaEmCurso = true;
+
+  try {
+    montarFormatos();
+    montarOpcoes();
+    const canvas = await DuStats.social.desenhar(ultimoEstado, formatoAtual, opcoesDoFormato());
+    const blob = await new Promise((r) => canvas.toBlob(r, 'image/jpeg', 0.9));
+    if (urlDaPrevia) URL.revokeObjectURL(urlDaPrevia);
+    urlDaPrevia = URL.createObjectURL(blob);
+    const f = DuStats.social.FORMATOS[formatoAtual];
+    $('#previa').innerHTML = `<img src="${urlDaPrevia}" alt="Prévia do post ${f.nome}">`;
+    $('#notaPost').textContent =
+      `${f.largura} × ${f.altura} · aparência da skin "${ultimoEstado.config.skin || 'placar'}"`;
+  } catch (erro) {
+    $('#previa').innerHTML = '<span class="previa-vazia">não deu para montar a prévia</span>';
+    console.error(erro);
+  } finally {
+    previaEmCurso = false;
+    if (previaPendente) { previaPendente = false; desenharPrevia(); }
+  }
+}
+
+$('#opcaoPost')?.addEventListener('change', desenharPrevia);
+$('#btJpeg')?.addEventListener('click', () =>
+  DuStats.social.baixar(ultimoEstado, formatoAtual, opcoesDoFormato(), 'image/jpeg'));
+$('#btPng')?.addEventListener('click', () =>
+  DuStats.social.baixar(ultimoEstado, formatoAtual, opcoesDoFormato(), 'image/png'));
+
+/**
+ * A prévia se refaz quando o CONTEÚDO muda — um gol, uma estatística, a skin —
+ * e não a cada pacote de estado. Com o relógio correndo o servidor manda estado
+ * a cada 2 s, e redesenhar um canvas de 1080 × 1920 nesse ritmo é tirar CPU do
+ * encoder do OBS, no mesmo PC, durante a transmissão.
+ */
+let assinaturaDaPrevia = null;
+function talvezRedesenharPrevia(estado) {
+  if ($('#aba-social').hidden) return;
+  const nova = JSON.stringify([
+    estado.placar, estado.comparativo, estado.linhaDoTempo, estado.config, formatoAtual
+  ]);
+  if (nova === assinaturaDaPrevia) return;
+  assinaturaDaPrevia = nova;
+  desenharPrevia();
+}
+
 // ------------------------------------------------------- conferência pré-jogo
 //
 // As regras moram em /shared/conferencia.js, sem DOM, para poderem ser testadas.
@@ -621,6 +769,7 @@ function renderizar(estado) {
   montarAjustes(estado);
   preencherAjustes(estado);
   desenharConferencia(estado);
+  talvezRedesenharPrevia(estado);
 }
 
 DuStats.aoEstado(renderizar);

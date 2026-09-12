@@ -160,7 +160,7 @@
     // config vinda de uma versão mais nova não pode pôr no ar um painel cru.
     const SKINS = [
       'placar', 'vidro', 'traco', 'bandeira', 'estadio',
-      'capsulas', 'costura', 'noturno', 'diurno'
+      'capsulas', 'costura', 'noturno', 'diurno', 'desk'
     ];
     const skin = e.config?.skin;
     document.documentElement.dataset.skin = SKINS.includes(skin) ? skin : 'placar';

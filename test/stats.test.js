@@ -195,3 +195,40 @@ test('jogo acompanhado de verdade mantém a posse no ar', () => {
   assert.equal(d.posse.medida, true);
   assert.equal(rotulos(JOGO, AGORA)[0], 'Posse de bola', 'e continua sendo a primeira linha');
 });
+
+// --------------------------------------------------------- autor do gol
+
+/*
+ * O autor é OPCIONAL e chega depois: o gol já subiu no placar quando o
+ * apontador digita o nome. O que estes testes guardam é que ele atravessa até
+ * a linha do tempo (é de lá que o Match Pack tira o "#10 MATHEUS" do story) e
+ * que a ausência dele é `null`, nunca string vazia nem `undefined` — os dois
+ * viram texto no canvas e iriam ao ar escritos.
+ */
+test('o autor do gol chega à linha do tempo', () => {
+  const d = stats.derivar(
+    [ev(0, 'periodo', null, {}), ev(0, 'gol', 'casa', { autor: '#10 Matheus' })],
+    esporte, 1000
+  );
+  const gol = d.linhaDoTempo.find((i) => i.tipo === 'gol');
+  assert.equal(gol.autor, '#10 Matheus');
+});
+
+test('gol sem autor, ou com autor em branco, devolve null', () => {
+  const casos = [{}, { autor: '' }, { autor: '   ' }];
+  for (const meta of casos) {
+    const d = stats.derivar(
+      [ev(0, 'periodo', null, {}), ev(0, 'gol', 'casa', meta)], esporte, 1000
+    );
+    assert.equal(d.linhaDoTempo.find((i) => i.tipo === 'gol').autor, null,
+      `meta ${JSON.stringify(meta)} devia virar null`);
+  }
+});
+
+test('o autor é aparado antes de ser guardado', () => {
+  const d = stats.derivar(
+    [ev(0, 'periodo', null, {}), ev(0, 'gol', 'fora', { autor: '  #8 Lima  ' })],
+    esporte, 1000
+  );
+  assert.equal(d.linhaDoTempo.find((i) => i.tipo === 'gol').autor, '#8 Lima');
+});

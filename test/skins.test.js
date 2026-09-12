@@ -29,10 +29,10 @@ const oferecidas = [...seletor.matchAll(/<option value="([a-z]+)">/g)]
   .map((m) => m[1])
   .filter((v, i, todos) => todos.indexOf(v) === i);
 
-test('o seletor oferece as nove skins', () => {
+test('o seletor oferece as dez skins', () => {
   assert.deepEqual(oferecidas, [
     'placar', 'vidro', 'traco', 'bandeira', 'estadio',
-    'capsulas', 'costura', 'noturno', 'diurno'
+    'capsulas', 'costura', 'noturno', 'diurno', 'desk'
   ]);
 });
 

@@ -88,6 +88,10 @@ const CONFIG_FABRICA = {
   competicao: 'Campeonato Amador',
   rodada: '',
   local: '',
+  // Quem paga a transmissão. Aparece no card de patrocínio do painel do
+  // intervalo e no rodapé do post de resumo; vazio, os dois simplesmente não
+  // aparecem — um bloco "SEU PATROCÍNIO AQUI" no ar é pior que nenhum.
+  patrocinador: '',
   acento: '#17b64a',
   // Aparência das peças que entram no ar. Vive na config da partida, e não numa
   // preferência global, porque a roupa certa depende do jogo: sol na grama pede
