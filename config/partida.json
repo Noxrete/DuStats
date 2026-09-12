@@ -1,0 +1,18 @@
+{
+  "competicao": "Mudou por fora",
+  "rodada": "",
+  "local": "Campo do Bairro",
+  "casa": {
+    "nome": "Grêmio da Vila ção",
+    "sigla": "GRV",
+    "cor": "#1f6feb",
+    "corTexto": "#ffffff"
+  },
+  "fora": {
+    "nome": "Atlético Serrano",
+    "sigla": "ATS",
+    "cor": "#d92d20",
+    "corTexto": "#ffffff"
+  },
+  "acento": "#17b64a"
+}

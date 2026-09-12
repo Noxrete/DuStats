@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>DuStats — Faixa de estatística</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/shared/tema.css">
+<link rel="stylesheet" href="/shared/faixa.css">
+<link rel="stylesheet" href="/shared/skins.css">
+</head>
+<body class="overlay">
+
+<div id="faixa" class="faixa">
+ <div class="conteudo-faixa">
+  <div class="rotulo-faixa"><span id="rotulo"></span></div>
+  <div class="linha-faixa">
+    <span class="time-faixa casa" style="--cor: var(--cor-casa)"><i></i><span id="siglaCasa"></span></span>
+    <span class="valor-faixa esq num" id="valorCasa"></span>
+    <div class="trilho">
+      <span class="casa" id="barraCasa" style="width:50%"></span>
+      <span class="fora" id="barraFora" style="width:50%"></span>
+    </div>
+    <span class="valor-faixa dir num" id="valorFora"></span>
+    <span class="time-faixa fora" style="--cor: var(--cor-fora)"><i></i><span id="siglaFora"></span></span>
+  </div>
+ </div>
+</div>
+
+<script src="/shared/bus.js"></script>
+<script src="/shared/overlay.js"></script>
+<script>
+'use strict';
+
+const faixa = document.getElementById('faixa');
+const { overlay } = DuStats;
+const params = overlay.parametros;
+
+const DURACAO = Number(params.get('segundos') || 10) * 1000;
+
+// Posições possíveis no rodapé. O padrão é a esquerda, que é onde a televisão
+// põe esse tipo de dado — e o Placar PRO está no topo, então não há colisão.
+const POSICOES = {
+  bl: { '--lado-esq': '60px', '--lado-dir': 'auto' },
+  bc: { '--lado-esq': '520px', '--lado-dir': 'auto' },
+  br: { '--lado-esq': 'auto', '--lado-dir': '60px' }
+};
+for (const [chave, valor] of Object.entries(POSICOES[params.get('pos')] || POSICOES.bl)) {
+  faixa.style.setProperty(chave, valor);
+}
+// ?baixo= sobe a faixa, para quem usa o lower third do Placar PRO no rodapé.
+if (params.get('baixo')) faixa.style.setProperty('--baixo', `${Number(params.get('baixo'))}px`);
+
+let temporizador = null;
+let ultimoDisparo = 0;
+
+function esconder() {
+  faixa.classList.remove('no-ar');
+  faixa.classList.remove('trocando');
+  clearTimeout(temporizador);
+}
+
+function preencher(linha, estado) {
+  document.getElementById('rotulo').textContent = linha.rotulo;
+  document.getElementById('siglaCasa').textContent = overlay.sigla(estado.config, 'casa');
+  document.getElementById('siglaFora').textContent = overlay.sigla(estado.config, 'fora');
+
+  const sufixo = linha.sufixo || '';
+  const total = linha.casa + linha.fora;
+  const fatiaCasa = total > 0 ? (linha.casa / total) * 100 : 50;
+
+  const lider = !linha.destacar || linha.casa === linha.fora
+    ? '' : (linha.casa > linha.fora ? 'casa' : 'fora');
+
+  const valorCasa = document.getElementById('valorCasa');
+  const valorFora = document.getElementById('valorFora');
+  valorCasa.textContent = `${linha.casa}${sufixo}`;
+  valorFora.textContent = `${linha.fora}${sufixo}`;
+  valorCasa.className = `valor-faixa esq num ${lider === 'casa' ? 'lider-casa' : ''}`;
+  valorFora.className = `valor-faixa dir num ${lider === 'fora' ? 'lider-fora' : ''}`;
+
+  document.getElementById('barraCasa').style.width = `${fatiaCasa}%`;
+  document.getElementById('barraFora').style.width = `${100 - fatiaCasa}%`;
+}
+
+function mostrar(linha, estado, restanteMs = DURACAO) {
+  const jaNoAr = faixa.classList.contains('no-ar');
+  clearTimeout(temporizador);
+
+  if (!jaNoAr) {
+    preencher(linha, estado);
+    faixa.classList.add('no-ar');
+    temporizador = setTimeout(esconder, restanteMs);
+    return;
+  }
+
+  // Já estava no ar: some com o conteúdo, troca por baixo e traz de volta.
+  // A moldura não se mexe — só o miolo — então a peça não pisca inteira.
+  faixa.classList.add('trocando');
+  setTimeout(() => {
+    preencher(linha, estado);
+    faixa.classList.remove('trocando');
+  }, 140);
+  temporizador = setTimeout(esconder, restanteMs);
+}
+
+DuStats.aoEstado((estado) => {
+  const pedido = estado.transmissao.faixa;
+
+  // Tela cheia no ar tira a faixa: ela ficaria por baixo do painel do intervalo
+  // e reapareceria sozinha no fim, no meio da volta do jogo.
+  if (['intervalo', 'resumo'].includes(estado.transmissao.modo)) return esconder();
+
+  if (!pedido || !pedido.em) return esconder();
+  if (pedido.em === ultimoDisparo) return;
+  ultimoDisparo = pedido.em;
+
+  // Se o OBS recarregar a fonte no meio, a faixa volta pelo tempo que RESTAVA,
+  // não por 10 s novos — senão um refresh esticaria o tempo no ar. E um disparo
+  // já vencido, que só chegou junto com o snapshot de abertura, fica de fora.
+  const restante = DURACAO - (DuStats.agoraServidor() - pedido.em);
+  if (restante <= 250) return;
+
+  const linha = (estado.comparativo || []).find((l) => l.rotulo === pedido.rotulo);
+  if (!linha) return; // estatística que ainda não existe neste jogo
+  mostrar(linha, estado, restante);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1130">
+<title>DuStats — posse de bola</title>
+<link rel="stylesheet" href="/shared/tema.css">
+<style>
+  /*
+   * Uma tela, um trabalho: marcar quem está com a bola.
+   *
+   * Posse é a ação mais repetida do jogo — uma batida a cada troca — e no
+   * painel completo ela divide a atenção com dezoito botões de lance. Aqui um
+   * segundo aparelho fica só nisto, e quem está no painel completo pode
+   * esquecer a posse e cuidar dos lances. Os dois gravam no mesmo servidor;
+   * isso já funcionava, só não havia como usar.
+   *
+   * Alvos gigantes de propósito: dá para acertar sem tirar o olho do campo.
+   */
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: var(--navy-fundo);
+    display: flex; flex-direction: column;
+    /* Respeita o entalhe e a barra de gestos do celular. */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right)
+             env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+
+  .topo {
+    flex: 0 0 auto;
+    display: grid; grid-template-columns: auto 1fr auto;
+    align-items: center; gap: 12px;
+    padding: 10px 14px;
+  }
+  .relogio { font-size: 26px; font-weight: 700; letter-spacing: .02em; }
+  .relogio small {
+    display: block; font-size: 11px; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--texto-fraco); font-weight: 400;
+  }
+  .placar { text-align: center; font-size: 22px; font-weight: 700; }
+  .estado-rede {
+    font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--texto-fraco); text-align: right;
+  }
+  .estado-rede.offline { color: #ffcc55; }
+
+  .barra {
+    flex: 0 0 auto; display: flex; height: 6px; margin: 0 14px 10px;
+    border-radius: 3px; overflow: hidden; background: rgba(255, 255, 255, .08);
+  }
+  .barra span { transition: width 400ms ease; }
+  .barra .casa { background: var(--cor-casa); }
+  .barra .fora { background: var(--cor-fora); }
+  /* Enquanto a posse não é medida o bastante para ir ao ar, a barra não pode
+     ter a cara de um número pronto — a mesma regra do painel completo. */
+  .crua .barra { opacity: .25; }
+
+  .botoes {
+    flex: 1 1 auto; min-height: 0;
+    display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr auto;
+    gap: 10px; padding: 0 14px 14px;
+  }
+
+  button {
+    font-family: var(--fonte); color: #fff;
+    border: 3px solid transparent; border-radius: 14px;
+    background: var(--navy-claro);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; padding: 8px;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 90ms ease, background 160ms ease, border-color 160ms ease;
+  }
+  button:active { transform: scale(.97); }
+  .nome { font-size: clamp(20px, 6vw, 34px); font-weight: 700; text-transform: uppercase; }
+  .pct { font-size: clamp(28px, 9vw, 46px); font-weight: 700; line-height: 1; }
+
+  .time[aria-pressed="true"] { border-color: #fff; }
+  .casa[aria-pressed="true"] { background: var(--cor-casa); }
+  .fora[aria-pressed="true"] { background: var(--cor-fora); }
+
+  .parada {
+    grid-column: 1 / -1; min-height: 84px;
+    font-size: 20px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  }
+  .parada[aria-pressed="true"] { background: #46505f; border-color: #fff; }
+
+  @media (prefers-reduced-motion: reduce) {
+    button, .barra span { transition-duration: 1ms; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topo">
+  <div class="relogio" id="relogio">00:00<small id="periodo">Pré-jogo</small></div>
+  <div class="placar"><span id="placar">0 × 0</span></div>
+  <div class="estado-rede" id="rede">ligando…</div>
+</div>
+
+<div class="barra">
+  <span class="casa" id="barraCasa" style="width:50%"></span>
+  <span class="fora" id="barraFora" style="width:50%"></span>
+</div>
+
+<div class="botoes">
+  <button class="time casa" data-posse="casa" aria-pressed="false">
+    <span class="nome" id="nomeCasa">Casa</span>
+    <span class="pct" id="pctCasa">50%</span>
+  </button>
+  <button class="time fora" data-posse="fora" aria-pressed="false">
+    <span class="nome" id="nomeFora">Fora</span>
+    <span class="pct" id="pctFora">50%</span>
+  </button>
+  <button class="parada" data-posse="" aria-pressed="true">Bola parada</button>
+</div>
+
+<script src="/shared/bus.js"></script>
+<script src="/shared/relogio.js"></script>
+<script>
+'use strict';
+
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+for (const botao of $$('.botoes button')) {
+  botao.addEventListener('click', () => {
+    if (navigator.vibrate) navigator.vibrate(25);
+    DuStats.registrar({ type: 'posse', team: botao.dataset.posse || null });
+    // Pinta na hora, sem esperar o servidor: numa troca de bola rápida o
+    // apontador bate duas vezes seguidas e precisa ver a primeira valer.
+    for (const outro of $$('.botoes button')) {
+      outro.setAttribute('aria-pressed', String(outro === botao));
+    }
+  });
+}
+
+// O relógio anda sozinho entre um pacote e outro; quem conta os segundos é o
+// navegador, senão o número pularia a cada mensagem.
+DuStats.relogio.aoTique((texto) => { $('#relogio').firstChild.nodeValue = texto; });
+
+DuStats.aoEstado((estado) => {
+  $('#periodo').textContent = estado.relogio.periodoNome
+    + (estado.relogio.acrescimoMin ? ` · +${estado.relogio.acrescimoMin}` : '');
+
+  $('#nomeCasa').textContent = estado.config.casa.nome;
+  $('#nomeFora').textContent = estado.config.fora.nome;
+  $('#placar').textContent = `${estado.placar.casa} × ${estado.placar.fora}`;
+
+  $('#pctCasa').textContent = `${estado.posse.casa}%`;
+  $('#pctFora').textContent = `${estado.posse.fora}%`;
+  $('#barraCasa').style.width = `${estado.posse.casa}%`;
+  $('#barraFora').style.width = `${estado.posse.fora}%`;
+  document.body.classList.toggle('crua', !estado.posse.medida);
+
+  for (const botao of $$('.botoes button')) {
+    botao.setAttribute('aria-pressed', String((botao.dataset.posse || null) === estado.posseAtual));
+  }
+});
+
+DuStats.aoConectar((ligado, naFila) => {
+  const alvo = $('#rede');
+  alvo.classList.toggle('offline', !ligado);
+  alvo.textContent = ligado ? 'ao vivo' : (naFila > 0 ? `${naFila} na fila` : 'sem rede');
+});
+
+/** A tela apagando no meio do jogo custa uma troca de bola inteira. */
+let trava = null;
+async function manterTelaAcesa() {
+  try {
+    trava = await navigator.wakeLock.request('screen');
+  } catch {
+    /* navegador sem suporte ou sem permissão: segue o jogo */
+  }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') manterTelaAcesa();
+});
+document.addEventListener('click', manterTelaAcesa, { once: true });
+
+/** Para quem aponta no teclado, ao lado do OBS. */
+document.addEventListener('keydown', (evento) => {
+  const atalhos = {
+    ArrowLeft: 'casa',
+    ArrowRight: 'fora',
+    ArrowDown: '',
+    ' ': ''
+  };
+  if (!(evento.key in atalhos)) return;
+  evento.preventDefault();
+  document.querySelector(`[data-posse="${atalhos[evento.key]}"]`).click();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,144 @@
+name: Testes
+
+# Roda a cada push e em cada pull request. O DuStats é mexido de vez em quando
+# entre temporadas, e sem isto uma regressão só apareceria no domingo de jogo.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  testes:
+    name: Testes — ${{ matrix.os }}, Node ${{ matrix.node }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # Uma falha no Windows não pode esconder o resultado do Linux, e vice-versa.
+      fail-fast: false
+      matrix:
+        # O Windows está aqui porque é onde o DuStats roda de verdade — e porque
+        # o único furo de segurança que apareceu neste projeto (barra invertida
+        # escapando da pasta pública) só existia lá: no Linux o mesmo pedido é
+        # inofensivo, então testar só aqui daria falso verde.
+        os: [ubuntu-latest, windows-latest]
+        node: ['20', '22']
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ matrix.node }}
+
+      # Sem `npm install`: o DuStats não tem dependência de produção e os testes
+      # usam só o `node:test` embutido. Se um dia aparecer um `npm ci` aqui, é
+      # sinal de que alguma dependência entrou sem querer.
+      - name: Testes unitários
+        run: npm test
+
+      - name: Fumaça — o servidor sobe e responde
+        run: npm run fumaca
+
+  empacotamento:
+    name: Empacotamento
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # Junta os módulos num .js só e embute public/ e config/. É o passo que
+      # quebra quando alguém cria um módulo novo no servidor e o empacotador
+      # não o alcança — e isso só apareceria na hora de gerar o .exe.
+      - name: Empacotar
+        run: npm run empacotar
+
+      # O empacotado tem que subir sozinho, sem nenhum arquivo do projeto ao
+      # lado: é assim que ele vai rodar dentro do executável.
+      - name: Fumaça do empacotado, isolado
+        run: |
+          mkdir -p /tmp/isolado
+          cp build/dustats.bundle.js /tmp/isolado/
+          node ferramentas/fumaca.mjs --alvo=/tmp/isolado/dustats.bundle.js
+
+  sem_dependencias:
+    name: Continua sem dependências
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      # A promessa central do projeto é "copia e roda, sem instalar nada".
+      # Uma dependência de produção adicionada sem querer quebraria isso em
+      # silêncio — o desenvolvedor teria node_modules na máquina e não veria.
+      - name: package.json não pode ter dependencies
+        run: |
+          node -e '
+            const p = require("./package.json");
+            const deps = Object.keys(p.dependencies || {});
+            if (deps.length > 0) {
+              console.error("Dependência de produção encontrada: " + deps.join(", "));
+              console.error("O DuStats precisa rodar sem npm install.");
+              process.exit(1);
+            }
+            console.log("Nenhuma dependência de produção.");
+          '
+
+      # Nem require de pacote externo escondido no código do servidor.
+      - name: Nenhum require fora dos módulos do Node
+        run: |
+          node -e '
+            const fs = require("fs");
+            const nativos = new Set(require("module").builtinModules);
+            // node:sea não aparece em builtinModules porque só existe dentro de
+            // um executável único — mas é do Node, não é pacote de terceiro.
+            nativos.add("sea");
+            const problemas = [];
+            for (const arquivo of fs.readdirSync("server")) {
+              if (!arquivo.endsWith(".js")) continue;
+              const codigo = fs.readFileSync("server/" + arquivo, "utf8");
+              for (const m of codigo.matchAll(/require\(\x27([^\x27]+)\x27\)/g)) {
+                const alvo = m[1];
+                if (alvo.startsWith(".")) continue;
+                if (nativos.has(alvo.replace(/^node:/, ""))) continue;
+                problemas.push(arquivo + " importa " + alvo);
+              }
+            }
+            if (problemas.length > 0) {
+              console.error(problemas.join("\n"));
+              process.exit(1);
+            }
+            console.log("Todos os require são relativos ou nativos do Node.");
+          '
+
+  executavel:
+    name: Gerar o DuStats.exe
+    runs-on: ubuntu-latest
+    # Roda TAMBÉM em pull request. Pular aqui economizava ~40 s de CI e custava
+    # o que importa: sem artefato na PR, a única forma de pegar o executável
+    # para testar seria mesclar antes de saber se funciona.
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # Baixa o Node oficial para Windows, injeta o DuStats dentro dele e
+      # devolve um arquivo só. O postject é instalado pelo próprio script.
+      - name: Montar o executável
+        run: npm run exe
+
+      # É daqui que o executável é baixado, sem ninguém precisar de Node nem
+      # de terminal para tê-lo.
+      - name: Publicar para download
+        uses: actions/upload-artifact@v4
+        with:
+          name: DuStats-Windows
+          path: build/DuStats.exe
+          retention-days: 90
+          if-no-files-found: error

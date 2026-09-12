@@ -1,0 +1,8 @@
+node_modules/
+build/
+DuStats-portatil/
+node/
+data/matches/
+data/atual.txt
+public/logos/
+*.log

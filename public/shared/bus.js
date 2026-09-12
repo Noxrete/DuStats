@@ -1,0 +1,250 @@
+/**
+ * Ligação única com o servidor: recebe o estado por WebSocket e envia lances
+ * por HTTP com fila local.
+ *
+ * Tudo aqui existe por causa do campo: o celular do apontador vai perder o
+ * Wi-Fi, e um gol não pode se perder junto. Por isso todo lance vai para uma
+ * fila em localStorage antes de sair, carrega um `cid` próprio (o servidor
+ * ignora reenvios do mesmo cid) e só sai da fila quando o servidor confirma.
+ */
+(function (global) {
+  'use strict';
+
+  const CHAVE_FILA = 'dustats.fila.v1';
+
+  const ouvintes = { estado: [], conexao: [] };
+  let estado = null;
+  let ws = null;
+  let tentativas = 0;
+  let conectado = false;
+  let skew = 0; // servidorAgora - Date.now(), para o relógio não depender do celular
+  let enviando = false;
+  // O WebSocket demora a perceber que caiu; quem sabe primeiro é o POST que
+  // falhou. É esse sinal que decide o aviso vermelho no painel.
+  let ultimoEnvioFalhou = false;
+
+  // ------------------------------------------------------------------ fila
+
+  function lerFila() {
+    try {
+      return JSON.parse(localStorage.getItem(CHAVE_FILA)) || [];
+    } catch {
+      return [];
+    }
+  }
+
+  function gravarFila(fila) {
+    try {
+      localStorage.setItem(CHAVE_FILA, JSON.stringify(fila));
+    } catch {
+      /* modo anônimo ou disco cheio: seguimos só com a memória */
+    }
+  }
+
+  function novoCid() {
+    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  async function escoarFila() {
+    if (enviando) return;
+    const fila = lerFila();
+    if (fila.length === 0) return;
+
+    enviando = true;
+    try {
+      const lote = fila.slice(0, 50);
+      const resposta = await fetch('/api/eventos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(lote)
+      });
+      if (!resposta.ok) throw new Error(await resposta.text());
+      gravarFila(lerFila().slice(lote.length));
+      ultimoEnvioFalhou = false;
+      avisarConexao();
+    } catch {
+      // Sem rede: a fila fica intacta e tentamos de novo no próximo ciclo.
+      ultimoEnvioFalhou = true;
+      avisarConexao();
+    } finally {
+      enviando = false;
+    }
+    if (lerFila().length > 0) setTimeout(escoarFila, 400);
+  }
+
+  setInterval(escoarFila, 2000);
+
+  // ------------------------------------------------------------- websocket
+
+  /**
+   * Qual página é esta, para o servidor saber quem está pendurado nele. Vai na
+   * query do handshake, e não como mensagem: o canal é só de descida — nenhum
+   * cliente jamais escreve pelo WebSocket — e manter assim é o que permite o
+   * servidor de 170 linhas sem biblioteca.
+   */
+  function nomeDaFonte() {
+    // A tela de posse conta separado do painel: a conferência avisa quando há
+    // dois PAINÉIS abertos, porque aí o mesmo gol entra duas vezes. Dois
+    // aparelhos com a tela de posse não é erro nenhum — é o arranjo de dois
+    // apontadores, que é justamente para o que ela existe.
+    if (location.pathname.endsWith('/posse.html')) return 'posse';
+    if (location.pathname.startsWith('/control')) return 'painel';
+    const casado = location.pathname.match(/\/overlay\/([a-z]+)\.html$/);
+    return casado ? casado[1] : 'outra';
+  }
+
+  function conectar() {
+    const protocolo = location.protocol === 'https:' ? 'wss' : 'ws';
+    ws = new WebSocket(`${protocolo}://${location.host}/?fonte=${nomeDaFonte()}`);
+
+    ws.onopen = () => {
+      conectado = true;
+      ultimoEnvioFalhou = false;
+      tentativas = 0;
+      avisarConexao();
+      escoarFila();
+    };
+
+    ws.onmessage = (mensagem) => {
+      let pacote;
+      try {
+        pacote = JSON.parse(mensagem.data);
+      } catch {
+        return;
+      }
+      if (pacote.tipo !== 'estado') return;
+      estado = pacote.estado;
+      skew = estado.servidorAgora - Date.now();
+      aplicarCores(estado);
+      for (const fn of ouvintes.estado) fn(estado);
+    };
+
+    ws.onclose = () => {
+      conectado = false;
+      avisarConexao();
+      // Backoff curto: no campo, reconectar rápido importa mais que poupar rede.
+      tentativas += 1;
+      setTimeout(conectar, Math.min(500 * tentativas, 5000));
+    };
+
+    ws.onerror = () => ws.close();
+  }
+
+  function avisarConexao() {
+    const saudavel = conectado && !ultimoEnvioFalhou;
+    for (const fn of ouvintes.conexao) fn(saudavel, lerFila().length);
+  }
+
+  /** Escurece um hex, para derivar o tom de apoio do acento sem pedir dois. */
+  function escurecer(hex, fator = 0.62) {
+    const casa = /^#?([0-9a-f]{6})$/i.exec(hex || '');
+    if (!casa) return hex;
+    const n = parseInt(casa[1], 16);
+    const canal = (deslocamento) =>
+      Math.round(((n >> deslocamento) & 255) * fator).toString(16).padStart(2, '0');
+    return `#${canal(16)}${canal(8)}${canal(0)}`;
+  }
+
+  /** Cores viram variáveis CSS, para o resto do sistema só usar var(). */
+  function aplicarCores(e) {
+    const raiz = document.documentElement.style;
+    raiz.setProperty('--cor-casa', e.config?.casa?.cor || '#1f6feb');
+    raiz.setProperty('--cor-fora', e.config?.fora?.cor || '#d92d20');
+    raiz.setProperty('--texto-casa', e.config?.casa?.corTexto || '#ffffff');
+    raiz.setProperty('--texto-fora', e.config?.fora?.corTexto || '#ffffff');
+
+    // A cor da transmissão (o verde do Marrentão) é do canal, não da partida:
+    // ela não muda quando os times mudam.
+    const acento = e.config?.acento || '#17b64a';
+    // Skin desconhecida cai no padrão em vez de deixar a peça sem estilo: uma
+    // config vinda de uma versão mais nova não pode pôr no ar um painel cru.
+    const SKINS = [
+      'placar', 'vidro', 'traco', 'bandeira', 'estadio',
+      'capsulas', 'costura', 'noturno', 'diurno', 'desk'
+    ];
+    const skin = e.config?.skin;
+    document.documentElement.dataset.skin = SKINS.includes(skin) ? skin : 'placar';
+
+    raiz.setProperty('--acento', acento);
+    raiz.setProperty('--acento-escuro', escurecer(acento));
+
+    // O escudo como marca d'água é desenho de CSS (a skin Noturno o usa de
+    // fundo), e CSS não alcança o atributo src de uma <img>. Então a URL vem
+    // por variável. `url()` só é escrito quando há escudo: com a string vazia
+    // o navegador tentaria carregar a própria página como imagem.
+    for (const lado of ['casa', 'fora']) {
+      const url = e.config?.[lado]?.escudo;
+      raiz.setProperty(`--escudo-${lado}`, url ? `url("${encodeURI(url)}")` : 'none');
+    }
+  }
+
+  // ------------------------------------------------------------------- api
+
+  async function post(rota, corpo) {
+    const resposta = await fetch(rota, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(corpo)
+    });
+    if (!resposta.ok) throw new Error(await resposta.text());
+    return resposta.json();
+  }
+
+  const DuStats = {
+    aoEstado(fn) {
+      ouvintes.estado.push(fn);
+      if (estado) fn(estado);
+    },
+    aoConectar(fn) {
+      ouvintes.conexao.push(fn);
+      fn(conectado, lerFila().length);
+    },
+    estado: () => estado,
+    conectado: () => conectado && !ultimoEnvioFalhou,
+    pendentes: () => lerFila().length,
+    agoraServidor: () => Date.now() + skew,
+    // Exposta porque o card do Instagram precisa do mesmo tom de apoio do
+    // acento. Duplicar a conta lá levaria os dois a divergirem no dia em que
+    // alguém mexesse no fator.
+    escurecer,
+
+    /** Enfileira um lance. Devolve na hora — o envio é assíncrono e resiliente. */
+    registrar(evento) {
+      const comCid = { ...evento, cid: novoCid(), wall: Date.now() + skew };
+      gravarFila([...lerFila(), comCid]);
+      avisarConexao();
+      escoarFila();
+      return comCid;
+    },
+
+    /**
+     * Completa o local de um lance que já foi enviado. O `cid` é o único
+     * identificador que o painel conhece na hora de registrar; o id do
+     * servidor só aparece no snapshot seguinte, e é ele que buscamos aqui.
+     */
+    async ajustarPorCid(cid, dados) {
+      for (let tentativa = 0; tentativa < 20; tentativa += 1) {
+        const alvo = estado?.ultimos?.find((e) => e.cid === cid);
+        if (alvo) {
+          return fetch(`/api/eventos/${alvo.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dados)
+          });
+        }
+        await new Promise((r) => setTimeout(r, 150));
+      }
+      return null;
+    },
+
+    apagar: (id) => fetch(`/api/eventos/${id}`, { method: 'DELETE' }),
+    desfazer: () => post('/api/desfazer', {}),
+    transmissao: (parcial) => post('/api/transmissao', parcial),
+    salvarConfig: (parcial) => post('/api/config', parcial),
+    enviarEscudo: (equipe, dataUrl) => post('/api/escudo', { equipe, dataUrl }),
+    novaPartida: (config) => post('/api/partida/nova', { config })
+  };
+
+  global.DuStats = DuStats;
+  conectar();
+})(window);

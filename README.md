@@ -1,1 +1,555 @@
 # DuStats
+
+[![Testes](https://github.com/Noxrete/DuStats/actions/workflows/testes.yml/badge.svg)](https://github.com/Noxrete/DuStats/actions/workflows/testes.yml)
+
+Estatísticas ao vivo de futebol amador para transmissão no OBS.
+
+Você aponta os lances num celular e as estatísticas entram no ar sozinhas —
+uma faixa no rodapé durante o jogo, um painel em tela cheia no intervalo — sem
+ninguém tocar no OBS.
+
+```
+celular do apontador  ──►  DuStats (PC do OBS)  ──►  2 overlays no OBS
+   botões de 1 toque        Node.js + WebSocket       faixa (rodapé) · intervalo (tela cheia)
+```
+
+## O DuStats só faz estatística
+
+Ele foi feito para conviver com o **[Placar PRO](https://painelplacarpro.com.br/)**,
+não para substituí-lo. A divisão é rígida de propósito: dois sistemas
+desenhando a mesma coisa é o caminho mais curto para dois placares no ar e dois
+cronômetros divergentes.
+
+| O Placar PRO faz | O DuStats faz |
+|---|---|
+| Placar, cronômetro, acréscimos | Posse de bola |
+| Escalações | Finalizações, chutes no gol, precisão |
+| Replays e melhores momentos | Escanteios, faltas, impedimentos, defesas |
+| Overlay de gol e cartão | Mapa de chutes e índice de pressão |
+
+Por isso o DuStats **não tem overlay de placar nem selo de gol**. Eles
+existiram e foram removidos justamente para não conflitar. Se um dia você
+parar de usar o Placar PRO, dá para trazê-los de volta:
+
+```bash
+git checkout af5def7 -- public/overlay/placar.html public/overlay/evento.html
+```
+
+## O que entra no ar
+
+| Overlay | Quando aparece | O que mostra |
+|---|---|---|
+| `faixa.html` | quando você chama, por 10 s | Uma estatística no rodapé: posse, finalizações, chutes no gol, escanteios, faltas ou cartões |
+| `intervalo.html` | modo **Intervalo** | Card flutuante no centro: comparativo → mapa de chutes → pressão → gols e cartões |
+| `resumo.html` | modo **Resumo** | O mesmo carrossel com o jogo inteiro, mais a exportação |
+
+Os dois primeiros ficam na **mesma cena do OBS o tempo todo** e decidem sozinhos
+quando aparecer, obedecendo o celular. O `resumo.html` é para abrir no navegador
+depois do jogo.
+
+## Instalar
+
+**Não instala.** O DuStats é um arquivo só: `DuStats.exe`.
+
+Copie para o PC do OBS — de preferência para uma pasta sua, como Documentos ou
+a Área de Trabalho — e dê **duplo clique**. O painel abre sozinho no navegador
+e o programa cria uma pasta `data` ao lado, onde ficam as partidas.
+
+Nada de Node.js, nada de `npm install`, nada de arquivo `.bat`. Para levar a
+outro computador, copie o `.exe` (leve a pasta `data` junto se quiser o
+histórico).
+
+> **Na primeira vez o Windows vai avisar** — "O Windows protegeu o seu PC".
+> Acontece com qualquer programa sem assinatura digital paga. Clique em
+> **Mais informações** → **Executar assim mesmo**. Se o antivírus reclamar,
+> libere o arquivo: executáveis feitos assim costumam dar alarme falso.
+
+### Onde baixar o executável
+
+O `.exe` não fica no repositório (tem 83 MB). Baixe da página de versões:
+
+**→ [github.com/Noxrete/DuStats/releases/latest](https://github.com/Noxrete/DuStats/releases/latest)**
+
+Em **Assets**, clique em `DuStats.exe`. Vem o arquivo direto, sem `.zip` para
+extrair, e funciona deslogado e no celular.
+
+Link fixo, se quiser guardar nos favoritos:
+
+```
+https://github.com/Noxrete/DuStats/releases/latest/download/DuStats.exe
+```
+
+> **Por que não pegar da aba Actions.** A CI também guarda o executável em
+> *Artifacts*, mas o GitHub só deixa **quem está logado** baixar de lá — para
+> visitante deslogado o nome aparece na lista e não é clicável, sem nenhuma
+> mensagem explicando. E o que vem é um `.zip` com o `.exe` dentro. O artefato
+> continua servindo para conferir uma pull request antes de mesclar; para usar
+> no jogo, use a Release.
+
+Para publicar uma versão nova, marque a versão — o resto é automático:
+
+```bash
+git tag v0.2.0 && git push origin v0.2.0
+```
+
+Sem terminal, dá para fazer o mesmo pela web: em **Releases → Draft a new
+release**, digite a tag em *Choose a tag*, confira o **Target** e publique. O
+fluxo roda em cima da tag recém-criada e anexa o `.exe` sozinho — e, como a
+release já existe nesse caminho, ele anexa em vez de tentar criar de novo.
+
+Se preferir gerar na sua máquina, com [Node.js](https://nodejs.org) instalado:
+
+```bash
+npm run exe          # gera build/DuStats.exe
+```
+
+O comando baixa o Node oficial para Windows, empacota o DuStats inteiro dentro
+dele e devolve um arquivo único. A ferramenta de injeção (`postject`) é
+instalada sozinha na primeira vez — ela é só de construção e não entra no
+executável.
+
+### Rodando pelo código, para desenvolver
+
+```bash
+npm start
+```
+
+O terminal imprime os endereços, já com o IP da sua rede:
+
+## Montar no OBS (uma vez só)
+
+Para cada um dos dois overlays:
+
+1. **+** → **Fonte de Navegador** → nome (ex.: `DuStats faixa`)
+2. URL: a que o terminal imprimiu
+3. Largura **1920**, altura **1080**
+4. Marque **Desligar a fonte quando não estiver visível**
+5. Deixe **Atualizar navegador quando a cena ficar ativa** desmarcado
+
+### A ordem das fontes importa
+
+Na mesma cena, de cima para baixo:
+
+```
+1. Placar PRO              canto superior esquerdo
+2. DuStats — intervalo     card flutuante no centro
+3. DuStats — faixa         rodapé
+4. Câmera
+```
+
+O **Placar PRO fica por cima**. O painel do intervalo não é mais tela cheia:
+é um card flutuante posicionado abaixo do canto do placar, e ele escurece de
+leve o resto da imagem para destacar. Deixando o Placar PRO acima, o placar
+continua nítido durante todo o intervalo em vez de ficar sob o escurecimento.
+
+A faixa mora no rodapé e o placar no topo — nunca se tocam. O fundo dos dois
+overlays do DuStats já é transparente.
+
+### Ajustes por URL
+
+| Parâmetro | Efeito |
+|---|---|
+| `faixa.html?pos=bc` | Move a faixa no rodapé: `bl` (padrão), `bc`, `br` |
+| `faixa.html?baixo=200` | Sobe a faixa, se você usa o lower third do Placar PRO no rodapé |
+| `faixa.html?segundos=8` | Muda quanto tempo a faixa fica no ar |
+| `resumo.html?exportar=1` | Mostra os botões de exportação (abra no navegador, **não** no OBS) |
+
+### Identidade visual
+
+Os gráficos usam a mesma linguagem do overlay do Placar PRO — base navy em
+blocos, faixa clara no topo de cada peça, texto branco pesado — para as duas
+coisas parecerem do mesmo pacote gráfico em vez de dois sistemas colados.
+
+O **verde do Marrentão** é a cor de acento: aparece na faixa do topo, no rótulo
+da faixa do rodapé e nos pontinhos do carrossel. Ele **nunca entra nos números**,
+que continuam falando na cor dos times — jogar uma terceira cor no meio dos
+dados confunde a leitura justo onde ela precisa ser instantânea.
+
+Para casar exatamente com o verde do seu overlay: **Ajustes → Cor da
+transmissão**. Tire um print do Placar PRO no ar e pegue a cor com um
+conta-gotas.
+
+## Durante o jogo
+
+Abra `/control/` no celular. Antes do apito:
+
+1. **Ajustes** → nomes, siglas, cores e escudos dos dois times
+2. **No ar** → **Jogo** (deixa a tela livre; só a faixa aparece, quando você chamar)
+3. **Próximo período** para sair do pré-jogo e entrar no 1º tempo
+4. **▶** junto com o cronômetro do Placar PRO
+
+Apontando:
+
+- **Posse** é o único botão que fica pressionado — troque a cada mudança de
+  posse. É dele que sai a porcentagem.
+- **Gol** já entra com um toque; registre também no Placar PRO, que é quem
+  mostra o placar no ar. A tela do campo que abre depois é opcional.
+- **Finalização** pede o desfecho; o local no campo é opcional.
+- **Desfazer** apaga o último lance (ignora as trocas de posse, que você corrige
+  só tocando de novo). Dá para apagar qualquer lance pela lista de baixo.
+
+Pondo estatística no ar:
+
+- Aba **No ar** → toque numa das seis estatísticas para ela subir no rodapé por
+  10 s. Botão apagado é estatística que ainda não aconteceu no jogo.
+- **Rodar sequência** encadeia posse → finalizações → escanteios, 8 s cada.
+  Boa para atendimento médico e outras paradas longas.
+- No intervalo: **No ar** → **Intervalo**. O carrossel roda sozinho a cada 12 s;
+  as setas seguram ou pulam um slide.
+- No fim: **Próximo período** até `Fim de jogo`, e **No ar** → **Resumo**.
+
+### Match Pack: o jogo virando post
+
+A aba **Social** exporta a partida em imagem, já no tamanho que o Instagram usa:
+
+| Formato | Medida | Para quê |
+|---|---|---|
+| **Feed 4:5** | 1080 × 1350 | resumo completo: placar, estatísticas e os gols |
+| **Quadrado 1:1** | 1080 × 1080 | uma estatística só, para postar no meio do jogo |
+| **Story 9:16** | 1080 × 1920 | o gol, com o minuto, para subir na hora |
+| **Resumo final** | 1080 × 1080 | o resultado, para carrossel ou feed |
+
+O arquivo nasce no formato exato, em JPEG ou PNG. A alternativa seria o operador
+printar a tela e recortar no celular à beira do campo — e print sai no tamanho
+do monitor, com a barra do navegador, e o Instagram recorta justamente a borda,
+onde moram placar, escudo e patrocínio. As medidas estão em teste: medida errada
+é o defeito mais caro aqui, porque só aparece depois de publicado.
+
+A prévia na aba é a **imagem de verdade**, reduzida por CSS — não uma maquete em
+HTML. Maquete mente na primeira vez que alguém mexe no desenho do canvas, e aí o
+operador aprova uma coisa e posta outra. Ela se refaz quando o conteúdo muda (um
+gol, uma estatística, a skin), não a cada pacote de estado: redesenhar um canvas
+de 1080 × 1920 a cada 2 s seria tirar CPU do encoder do OBS.
+
+Os quatro usam a **mesma pele da skin** que foi ao ar, pelo mesmo `paletaDaSkin`
+do card de resumo — o post precisa parecer do mesmo sistema que a transmissão.
+
+Duas coisas que os formatos não têm, e é melhor dizer do que fingir:
+
+- **Foto.** Nem de estádio, nem de jogador. O DuStats roda offline no campo e não
+  tem banco de imagem; o que dá profundidade é o escudo em marca d'água e a grama
+  pintada.
+- **Nome de jogador**, a menos que o apontador tenha digitado. O gol aceita um
+  autor **opcional**, perguntado depois de o placar já ter subido — a mesma regra
+  do local do chute. Sem ele o post mostra o minuto e o time, que é informação
+  verdadeira.
+
+## Sincronizar o relógio com o Placar PRO
+
+O DuStats tem cronômetro próprio porque posse de bola é medida em tempo e cada
+lance precisa do minuto em que caiu. Mas quem aparece na tela é o do Placar PRO,
+e os dois se afastam alguns segundos ao longo do jogo — foram iniciados por
+dedos diferentes.
+
+Na aba **No ar**, digite o tempo que está no Placar PRO e toque em **Ajustar**.
+Errou o valor? Ajuste de novo — o valor é absoluto, então o segundo substitui o
+primeiro. O botão **Desfazer** não mexe em relógio de propósito: ele é para
+apagar lance errado, e se pegasse o ajuste você apagaria um lance sem querer.
+
+Isso move só o rótulo de minuto. **Nenhuma estatística já medida muda**: a posse
+de bola e as janelas do gráfico de pressão correm num relógio interno separado,
+que o ajuste não toca — corrigir um rótulo mexendo nessa base estragaria número
+que ninguém iria conferir.
+
+### Atalhos de teclado
+
+Para quem aponta no mesmo PC do OBS:
+
+| Tecla | Ação | | Tecla | Ação |
+|---|---|---|---|---|
+| `espaço` | Inicia/pausa o relógio | | `Q` / `P` | Gol casa / fora |
+| `Z` | Desfazer | | `W` / `O` | Finalização casa / fora |
+| `←` `↓` `→` | Posse casa / parada / fora | | `E` / `I` | Escanteio casa / fora |
+| | | | `R` / `U` | Falta casa / fora |
+
+## Depois do jogo
+
+Abra `http://SEU-IP:4400/overlay/resumo.html?exportar=1` no navegador:
+
+- **PNG quadrado** 1080×1080, pronto para o Instagram ou o grupo do WhatsApp
+- **Resumo CSV** e **Lances CSV** (abrem direto no Excel em português)
+- **Backup JSON** da partida inteira
+
+## Testar sem jogo
+
+```bash
+npm start                      # numa aba
+npm run simular                # noutra: 1º tempo pronto, painel do intervalo no ar
+npm run simular -- --completo  # 90 minutos + resumo final
+npm run simular -- --vivo      # jogo correndo agora, para ver as animações
+```
+
+O simulador cria uma partida fictícia com horários retroativos, então o painel
+do intervalo aparece com 45 minutos de estatísticas na hora — dá para ajustar
+os overlays em segundos em vez de esperar um jogo.
+
+```bash
+npm test                       # testes do relógio, estatísticas, estado e transporte
+npm run fumaca                 # sobe o servidor de verdade e confere as rotas
+```
+
+## Integração contínua
+
+A cada push e pull request, o GitHub Actions roda:
+
+- **os testes unitários em Linux e Windows**, no Node 20 e 22. O Windows está
+  aí porque é onde o DuStats roda de verdade — e porque o único furo de
+  segurança que apareceu neste projeto (barra invertida escapando da pasta
+  pública) **só existia lá**. Testar só no Linux daria falso verde.
+- **o teste de fumaça**, que sobe o servidor e bate nas rotas de verdade. Os
+  testes unitários não abrem socket nenhum; este pega rota que sumiu, arquivo
+  estático que ficou de fora do empacotamento e servidor que nem sobe.
+- **o empacotamento**, conferindo que o `.js` único sobe sozinho numa pasta
+  vazia — que é como ele roda dentro do executável.
+- **um guarda contra dependências**: se um `dependencies` ou um `require` de
+  pacote externo entrar no servidor, a CI falha. A promessa de "copia e roda,
+  sem instalar nada" se perderia em silêncio, porque na máquina de quem
+  desenvolve o `node_modules` já está lá.
+- **a montagem do `DuStats.exe`**, que fica anexada à execução em *Artifacts*.
+  Roda em pull request também: sem isso, a única forma de pegar o executável
+  para testar seria mesclar antes de saber se funciona.
+
+E, quando uma tag `v*` é empurrada, o fluxo `publicar.yml` roda os testes de
+novo, monta o executável e cria a Release com o `.exe` anexado.
+
+## Conferência antes do jogo
+
+A aba **Ajustes** abre numa lista de checagens. Ela existe porque o pior modo de
+falha do sistema não é estatística errada — é a Fonte de Navegador do OBS não
+estar recebendo, e isso só aparecer no intervalo, no ar.
+
+O servidor sabe quem está pendurado nele: cada página se identifica na query do
+handshake do WebSocket, então a lista diz, antes do apito, se a faixa e o painel
+do intervalo estão recebendo, e há quanto tempo. Se dois painéis estiverem
+abertos ao mesmo tempo, avisa também — dois apontadores registram o mesmo gol
+duas vezes, e o placar só denuncia isso depois.
+
+No mesmo cartão sai um QR com o endereço do painel. O endereço vem do servidor,
+não do navegador: quem abre no PC do OBS abre em `localhost`, e um QR de
+`localhost` manda o celular para o próprio celular.
+
+A lista responde ainda uma segunda pergunta, que não é sobre fiação: **é o jogo
+certo?** O DuStats reabre a partida onde parou — o que é o certo quando o
+servidor cai no meio do jogo e é exatamente o errado no domingo seguinte. Então
+ela avisa quando a partida carregada é de outro dia, ou já chegou ao fim (o caso
+do jogo duplo), mostrando o placar que está no ar; quando um time ainda está com
+o nome de fábrica, que iria à faixa como "Time Visitante"; e quando as cores dos
+dois times são parecidas demais, porque na barra da faixa elas se encostam e
+viram um bloco só. O aviso de cor mostra as duas cores ao lado do texto.
+
+Nenhuma dessas contas pede campo novo ao servidor: todas saem do estado que já
+chega. Elas moram em `public/shared/conferencia.js`, sem DOM, e têm teste — a
+virada de dia é por data no calendário e não por 24 horas, senão o jogo de
+sábado à noite conferido no domingo de manhã passaria batido.
+
+## Aparência no ar
+
+Dez skins, escolhidas por partida na aba **Ajustes**, ao lado da cor da
+transmissão:
+
+| Skin | A ideia |
+|---|---|
+| **Placar** | a original, casada com o overlay do Placar PRO |
+| **Vidro** | material — lâmina translúcida que pousa sobre o vídeo |
+| **Traço** | ausência — só filetes e tipografia, sem painel |
+| **Bandeira** | clube — a cor da transmissão vira estrutura, não detalhe |
+| **Estádio** | luz — quase preto, com aresta de neon acendendo |
+| **Cápsulas** | lona — cartaz de linho cru, cada estatística numa pastilha própria |
+| **Costura** | confronto — dois campos de cor, um de cada clube, unidos por uma costura |
+| **Noturno** | refletor — escuro, com os escudos inteiros em marca d'água nas pontas |
+| **Diurno** | sol — cartaz claro, rótulo no meio e as barras crescendo dele para fora |
+| **Desk** | mesa — os quatro gráficos no ar ao mesmo tempo, em cards, com barra de placar |
+
+As quatro últimas nasceram de maquetes em que o escudo era decoração: recortado
+em cunha, posto por cima do painel, atravessando o nome do time e a primeira
+linha de estatística. Por isso elas seguem três regras, e há teste para as três:
+
+1. **O escudo nunca é cortado.** Nada de `clip-path` atravessando o brasão — e
+   como `clip-path` recorta os descendentes junto, ele também não pode estar em
+   nenhum ancestral do escudo. Onde o desenho pede corte diagonal, quem é
+   cortado é o pseudo-elemento que pinta o fundo, não o elemento que contém o
+   escudo.
+2. **O escudo nunca cobre dado, e dado nunca cobre escudo.** Cada um com sua
+   coluna. Onde o escudo é marca d'água, a coluna de dados tem margem reservada
+   do tamanho dele.
+3. **Decoração é pseudo-elemento atrás do conteúdo.** Pseudo-elemento
+   posicionado pinta acima do fluxo normal; sem uma camada explícita, a costura
+   e a diagonal passam por cima das barras e adulteram a cor do clube.
+
+A **Desk** é a única que muda conteúdo, e não só aparência: ela põe os quatro
+gráficos no ar ao mesmo tempo em vez de girar o carrossel. A exceção é
+deliberada — o painel do intervalo é *uma* Fonte de Navegador no OBS, e fazer
+disto uma peça separada obrigaria o operador a reconfigurar o OBS para trocar
+de aparência; trocando pela skin, ele troca no celular. Ela também é a única com
+card de patrocinador, que só aparece com `patrocinador` preenchido nos Ajustes.
+
+O que a Desk **não** tem, e a maquete que a originou tinha: card de destaque de
+jogador. Ele vivia de uma foto do atleta e de estatística individual, e o
+DuStats não tem nem uma nem outra — os lances são registrados por time. Um card
+com foto genérica e nota inventada seria a única parte falsa da peça.
+
+Para comparar antes de entrar no ar: **`/overlay/skins.html`**. Desenha as peças
+de verdade — o mesmo `paineis.js` e o mesmo `faixa.css` que vão para o OBS —
+sobre grama de dia e de noite, com um retângulo no canto representando o Placar
+PRO. Não carrega o `bus.js`: não fala com o servidor e não toca na partida
+salva.
+
+A skin vale para a faixa, o painel do intervalo, o resumo pós-jogo e o card do
+Instagram. Nos três primeiros ela é CSS; no card é canvas, então cada skin tem
+seus pintores em `public/shared/cartao.js`.
+
+Vidro fosco de verdade não existe aqui, e não por preguiça: `backdrop-filter`
+desfoca o que está atrás do elemento **dentro da página**, e no OBS a Fonte de
+Navegador é uma camada separada com fundo transparente. O vídeo não está na
+página. A skin Vidro simula o efeito.
+
+## Dois apontadores
+
+Posse de bola é uma batida a cada troca de bola — mais que todos os outros
+lances somados. Fazer isso e registrar finalização, escanteio e falta ao mesmo
+tempo, olhando o jogo, é onde a marcação começa a falhar.
+
+`/control/posse.html`, num segundo celular, faz só posse: dois botões do
+tamanho da tela e um de bola parada. Quem está no painel completo cuida dos
+lances e pode esquecer a posse. Os dois gravam no mesmo servidor — isso já
+funcionava desde sempre, porque o estado vive no servidor e não no aparelho;
+faltava uma tela que assumisse esse arranjo.
+
+O link sai na aba **Ajustes**, já com o endereço da rede pronto para digitar no
+outro aparelho.
+
+## Configuração
+
+| Variável | Padrão | Para quê |
+|---|---|---|
+| `PORT` | `4400` | Porta do servidor |
+| `DUSTATS_TOKEN` | vazio | Se definida, exige o cabeçalho `x-dustats-token` para gravar |
+| `DUSTATS_ESPORTE` | `futebol` | Nome do arquivo em `config/` |
+| `DUSTATS_DADOS` | ao lado do `.exe` | Onde gravar partidas e configuração |
+| `DUSTATS_ABRIR` | vazio | `1` abre o painel no navegador ao subir |
+
+`config/futebol.json` define os períodos e os tipos de lance. `config/partida.json`
+guarda os times (o painel escreve nele sozinho).
+
+## Onde ficam os dados
+
+Cada partida vira um arquivo em `data/matches/`, **gravado a cada lance**. Se o
+servidor cair no meio do jogo, `npm start` volta exatamente no ponto em que
+parou, com o relógio certo — o tempo é reconstruído dos horários dos eventos,
+não de um cronômetro em memória.
+
+Os arquivos antigos ficam guardados; **Começar partida nova** no painel só
+arquiva o atual.
+
+## Se algo der errado
+
+**O celular não abre o painel.** Confira que ele está no mesmo Wi-Fi. Se ainda
+assim não abrir, é o firewall do Windows: libere o Node.js na rede privada. Na
+primeira vez que você abre o DuStats, o Windows pergunta isso numa janela —
+marque **redes privadas** e permita.
+
+**"A porta 4400 já está em uso".** O DuStats já está aberto em outra janela.
+Feche a antiga, ou abra em outra porta: `set PORT=4401 && DuStats.exe`.
+
+**A janela abriu e fechou sozinha.** Não fecha mais: qualquer erro grave agora
+segura a janela aberta com a mensagem até você apertar uma tecla. Se acontecer,
+me mande o que estiver escrito.
+
+**"Não consigo gravar em ... data".** O `.exe` está numa pasta protegida, como
+Arquivos de Programas. Mova para Documentos ou para a Área de Trabalho.
+
+**O overlay ficou preto no OBS.** Está tudo certo: os dois só desenham quando
+têm o que mostrar. O `intervalo.html` fica vazio fora do modo Intervalo, e a
+`faixa.html` só aparece nos 10 s depois de você chamar uma estatística.
+
+**Chamei a faixa e não apareceu nada.** Ou o painel está em modo Intervalo ou
+Resumo (a tela cheia esconde a faixa de propósito), ou a estatística ainda não
+aconteceu no jogo — nesse caso o botão no celular está apagado.
+
+**O Placar PRO some no intervalo.** É o esperado: o painel de estatísticas em
+tela cheia fica acima dele na ordem das fontes. Se acontecer o contrário — o
+placar flutuando por cima das estatísticas — a ordem está invertida.
+
+**O minuto do DuStats não bate com o do Placar PRO.** Normal, são cronômetros
+independentes. Aba **No ar** → digite o tempo do Placar PRO → **Ajustar**.
+
+**O cronômetro travou.** O relógio continua contando no navegador mesmo sem
+rede; se o painel parou de atualizar, ele mostra um aviso vermelho de
+"sem conexão".
+
+**Perdi um lance porque o Wi-Fi caiu.** Não perdeu: o painel guarda os lances no
+próprio celular e manda todos assim que a conexão volta.
+
+**Mudei o escudo e o OBS mostra o antigo.** Clique com o botão direito na fonte
+→ **Atualizar**.
+
+## Se um dia entrar visão computacional
+
+O sistema já está preparado, mas nada de detecção automática está implementado.
+Quatro decisões deixam esse caminho aberto:
+
+1. `POST /api/eventos` aceita eventos externos com `source: "cv"` — o mesmo
+   formato do painel.
+2. Posse de bola é gravada como **eventos de mudança**, exatamente o que um
+   detector produz.
+3. As coordenadas do mapa de chutes já são normalizadas 0–1 no espaço do campo,
+   que é a saída de uma homografia.
+4. `server/stats.js` não sabe de onde veio nenhum evento.
+
+**Restrição de câmera, e ela é decisiva:** o módulo de visão precisa consumir
+uma **câmera fixa e aberta, via RTSP, em outro processo**. A câmera de jogo que
+se move e passa por mesa de corte é inutilizável para isso — cada corte, zoom e
+pan quebra tanto o rastreio dos jogadores quanto a homografia do gramado.
+
+E vale saber o limite antes de investir: posse de bola, mapa de calor e radar
+tático são viáveis; **gol, escanteio, falta e cartão não são** — mesmo os
+modelos de ponta erram demais para uma transmissão ao vivo, e esses lances
+continuariam precisando de um toque no painel.
+
+Referências úteis: [roboflow/sports](https://github.com/roboflow/sports) (MIT,
+modelos pré-treinados de jogador, bola e keypoints do campo) e
+[soccer-video-analytics](https://github.com/Tony-Luna/soccer-video-analytics).
+
+## Como é feito por dentro
+
+Duas decisões explicam quase todo o código:
+
+**Tudo é evento.** Nenhuma estatística é um contador que sobe. O jogo é uma
+lista de eventos imutáveis, e placar, posse, precisão e pressão são *derivados*
+dela a cada leitura (`server/stats.js`). É isso que faz o **desfazer** custar
+uma linha, o reinício do servidor ser exato e a visão computacional caber
+depois sem reescrever nada.
+
+**Um arquivo só.** O executável é o Node oficial com o DuStats injetado dentro
+(recurso de *single executable application* do próprio Node). Os módulos do
+servidor viram um `.js` só e `public/` e `config/` entram embutidos como texto;
+`server/recursos.js` é o único lugar que sabe se está lendo do disco ou de
+dentro do binário. Os dados da partida nunca são embutidos — precisam ser
+graváveis e sobreviver a uma troca de versão, então ficam ao lado do `.exe`.
+
+**Zero dependências.** Não só no navegador: o servidor também. HTTP e
+WebSocket são escritos em cima dos módulos do próprio Node (`server/http.js` e
+`server/ws.js`, ~250 linhas somadas). O que tornou isso viável foi o canal ser
+só de descida — o servidor manda estado, e nenhum cliente responde por ele.
+É o que permite não ter `npm install` e carregar tudo num pendrive.
+
+**Nada depende da internet.** Sem CDN, sem fonte do Google, sem biblioteca de
+gráficos. Os gráficos são SVG escrito à mão e o card do Instagram é desenhado
+direto em `<canvas>`. No campo o PC pode estar sem rede, e um overlay que entra
+no ar sem fonte não tem conserto no meio do jogo.
+
+**Um número, um lugar.** A faixa do rodapé não recalcula nada: ela procura a
+linha pelo rótulo na mesma lista comparativa que alimenta o painel do intervalo
+(`linhasComparativas()`, em `server/stats.js`). Assim é impossível o rodapé
+mostrar 58% de posse e o painel do intervalo mostrar 57%.
+
+```
+server/       clock.js (tempo)  stats.js (derivação)  state.js (partida)
+              storage.js (disco)  export.js (CSV)  recursos.js (disco ou embutido)
+              http.js + ws.js (transporte)  index.js (rotas e subida)
+public/       shared/ (bus, campo, painéis, cartão)  control/  overlay/
+config/       futebol.json (regras do esporte)  partida.json (times)
+ferramentas/  empacotar.mjs (junta tudo num .js)  montar-exe.mjs (gera o .exe)
+              zip.mjs (lê o pacote oficial do Node)
+build/        saída da construção, fora do repositório
+```
