@@ -12,7 +12,7 @@ jobs:
   release:
     name: DuStats v1.0.1
     if: github.ref == 'refs/heads/codex/bughunt-skins'
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
       - name: Baixar o código
@@ -40,7 +40,7 @@ jobs:
 
           Inclui as nove skins, correções de contraste, atualização dos painéis durante a transmissão, prévia PNG sincronizada e recuperação da inicialização quando a enumeração de rede falha.
 
-          O executável foi gerado pela CI em Windows com Node.js 22. Consulte o PR #2 e docs/BUGHUNT-SKINS.md para os detalhes do bughunt."
+          O executável Windows foi gerado pela CI em Ubuntu com Node.js 22 e empacotado para win-x64. Consulte o PR #2 e docs/BUGHUNT-SKINS.md para os detalhes do bughunt."
           fi
           gh release upload v1.0.1 build/DuStats.exe \
             --repo "$GITHUB_REPOSITORY" \
