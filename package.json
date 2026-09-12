@@ -1,6 +1,6 @@
 {
   "name": "dustats",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Estatisticas ao vivo de futebol amador para transmissao no OBS. Sem dependencias.",
   "private": true,
   "type": "commonjs",

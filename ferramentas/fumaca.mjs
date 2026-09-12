@@ -37,6 +37,8 @@ const CAMINHOS = [
   '/shared/qr.js',
   '/shared/conferencia.js',
   '/shared/faixa.css',
+  '/shared/faixa.js',
+  '/shared/faixa-escudos.css',
   '/shared/skins.css',
   '/overlay/skins.html',
   '/demo/charrua.png',

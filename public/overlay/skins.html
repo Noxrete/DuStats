@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="/shared/paineis.css">
 <link rel="stylesheet" href="/shared/faixa.css">
 <link rel="stylesheet" href="/shared/skins.css">
+<link rel="stylesheet" href="/shared/faixa-escudos.css">
 <style>
   /*
    * Vitrine das skins, para escolher sem entrar no ar.
@@ -33,7 +34,7 @@
   h1 { font-size: 19px; letter-spacing: .16em; text-transform: uppercase; margin: 0; }
   .dica { font-size: 13px; color: var(--texto-fraco); }
 
-  .controles { display: flex; gap: 8px; margin-left: auto; }
+  .controles { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
   .controles button {
     font-family: var(--fonte); font-size: 13px; font-weight: 700;
     letter-spacing: .08em; text-transform: uppercase;
@@ -111,6 +112,13 @@
      quando o jogo recomeça. */
   body:not(.mostrando-faixa) .palco .faixa { display: none; }
   body.mostrando-faixa .palco .cena-painel { display: none; }
+  /* Aproxima a faixa mantendo seu tamanho real de 880 px. */
+  body.mostrando-faixa .palco { width: 1000px; height: 260px; }
+  body.mostrando-faixa .palco .faixa { bottom: 32px; }
+  body.mostrando-faixa .palco .placarpro { display: none; }
+  .controles .controle-faixa { display: none; }
+  body.mostrando-faixa .controles .controle-faixa { display: inline-block; }
+  @media (max-width: 850px) { .grade { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -120,6 +128,8 @@
   <span class="dica">As peças são as de verdade, com dados de exemplo. Nenhuma partida é lida ou alterada aqui.</span>
   <div class="controles">
     <button id="btPeca" aria-pressed="false">Ver a faixa</button>
+    <button id="btEstatistica" class="controle-faixa">Trocar estatística</button>
+    <button id="btEscudos" class="controle-faixa" aria-pressed="false">Testar sem escudos</button>
     <button id="btLuz" aria-pressed="false">Jogo à noite</button>
     <button id="btRepetir">Repetir animação</button>
   </div>
@@ -131,6 +141,7 @@
      é o suficiente para overlay.js e paineis.js se registrarem. -->
 <script>window.DuStats = {};</script>
 <script src="/shared/overlay.js"></script>
+<script src="/shared/faixa.js"></script>
 <script src="/shared/campo.js"></script>
 <script src="/shared/paineis.js"></script>
 <script>
@@ -172,28 +183,15 @@ const ESTADO = {
   ]
 };
 
-/** A faixa do rodapé, montada com a mesma marcação de faixa.html. */
-function faixaDe(linha) {
-  const { overlay } = DuStats;
-  const total = linha.casa + linha.fora;
-  const fatia = total > 0 ? (linha.casa / total) * 100 : 50;
-  const sufixo = linha.sufixo || '';
-  return `
-    <div class="faixa no-ar">
-      <div class="conteudo-faixa">
-        <div class="rotulo-faixa"><span>${linha.rotulo}</span></div>
-        <div class="linha-faixa">
-          <span class="time-faixa casa" style="--cor: var(--cor-casa)"><i></i><span>${overlay.sigla(ESTADO.config, 'casa')}</span></span>
-          <span class="valor-faixa esq num">${linha.casa}${sufixo}</span>
-          <div class="trilho">
-            <span class="casa" style="width:${fatia}%"></span>
-            <span class="fora" style="width:${100 - fatia}%"></span>
-          </div>
-          <span class="valor-faixa dir num">${linha.fora}${sufixo}</span>
-          <span class="time-faixa fora" style="--cor: var(--cor-fora)"><i></i><span>${overlay.sigla(ESTADO.config, 'fora')}</span></span>
-        </div>
-      </div>
-    </div>`;
+let estatistica = 0;
+let semEscudos = false;
+function preencherFaixas() {
+  const estado = semEscudos ? { ...ESTADO, config: { ...ESTADO.config,
+    casa: { ...ESTADO.config.casa, escudo: '' }, fora: { ...ESTADO.config.fora, escudo: '' }
+  } } : ESTADO;
+  for (const faixa of document.querySelectorAll('.palco .faixa')) {
+    DuStats.faixa.preencher(faixa, estado.comparativo[estatistica], estado);
+  }
 }
 
 function montar() {
@@ -211,7 +209,7 @@ function montar() {
             <div class="pontinhos"><i class="ativo"></i><i></i><i></i><i></i></div>
           </div>
         </div>
-        ${faixaDe(ESTADO.comparativo[0])}
+        <div class="faixa no-ar"></div>
       </div>
     </figure>`).join('');
 
@@ -230,6 +228,7 @@ function montar() {
   raiz.setProperty('--escudo-casa', `url("${ESTADO.config.casa.escudo}")`);
   raiz.setProperty('--escudo-fora', `url("${ESTADO.config.fora.escudo}")`);
 
+  preencherFaixas();
   ajustarEscala();
 }
 
@@ -237,9 +236,10 @@ function montar() {
 function ajustarEscala() {
   for (const moldura of document.querySelectorAll('[data-moldura]')) {
     const palco = moldura.querySelector('.palco');
-    const z = moldura.clientWidth / 1920;
+    const faixa = document.body.classList.contains('mostrando-faixa');
+    const z = moldura.clientWidth / (faixa ? 1000 : 1920);
     palco.style.transform = `scale(${z})`;
-    moldura.style.height = `${1080 * z}px`;
+    moldura.style.height = `${(faixa ? 260 : 1080) * z}px`;
   }
 }
 window.addEventListener('resize', ajustarEscala);
@@ -248,6 +248,18 @@ document.getElementById('btPeca').addEventListener('click', (e) => {
   const faixa = document.body.classList.toggle('mostrando-faixa');
   e.currentTarget.setAttribute('aria-pressed', String(faixa));
   e.currentTarget.textContent = faixa ? 'Ver o painel' : 'Ver a faixa';
+  ajustarEscala();
+});
+
+document.getElementById('btEstatistica').addEventListener('click', () => {
+  estatistica = (estatistica + 1) % ESTADO.comparativo.length;
+  preencherFaixas();
+});
+document.getElementById('btEscudos').addEventListener('click', (e) => {
+  semEscudos = !semEscudos;
+  e.currentTarget.setAttribute('aria-pressed', String(semEscudos));
+  e.currentTarget.textContent = semEscudos ? 'Mostrar escudos' : 'Testar sem escudos';
+  preencherFaixas();
 });
 
 document.getElementById('btLuz').addEventListener('click', (e) => {
@@ -268,6 +280,11 @@ document.getElementById('btRepetir').addEventListener('click', () => {
   }));
 });
 
+if (DuStats.overlay.parametros.get('peca') === 'faixa') {
+  document.body.classList.add('mostrando-faixa');
+  document.getElementById('btPeca').setAttribute('aria-pressed', 'true');
+  document.getElementById('btPeca').textContent = 'Ver o painel';
+}
 montar();
 </script>
 </body>

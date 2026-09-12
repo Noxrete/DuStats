@@ -324,10 +324,12 @@
  * estatística. Bonito parado, errado no ar — e é o mesmo erro que a Bandeira
  * já tinha cometido com o campo diagonal.
  *
- * Então vale para as quatro, sem exceção:
+ * No painel cheio e no brasão de identificação valem as regras abaixo.
+ * As faixas também usam cópias decorativas ampliadas e recortadas, a pedido
+ * do operador; seus desenhos estão em faixa-escudos.css.
  *
- *  1. O ESCUDO NUNCA É CORTADO. Nada de `clip-path` atravessando o brasão:
- *     um escudo pela metade não é estilo, é um clube mal representado. Ele
+ *  1. O BRASÃO DE IDENTIFICAÇÃO NÃO É CORTADO. Nada de `clip-path` atravessando
+ *     o escudo principal do clube. Ele
  *     entra inteiro, com `object-fit: contain`, no espaço que é dele.
  *
  *  2. O ESCUDO NUNCA COBRE DADO, E DADO NUNCA COBRE ESCUDO. Cada um tem sua

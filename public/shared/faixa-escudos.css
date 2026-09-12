@@ -1,0 +1,191 @@
+/* Escudos das nove faixas. Carregar depois de skins.css.
+ * A arte recortada ocupa só o espaço do time; números e barras têm sua coluna.
+ * O selo principal identifica o clube mesmo quando a cópia decorativa é cortada.
+ */
+.faixa .linha-faixa {
+  grid-template-columns: 170px 104px minmax(72px, 1fr) 104px 170px;
+  gap: 12px;
+  min-height: 80px;
+  padding: 0 24px;
+}
+.faixa .time-faixa {
+  --entrada-escudo: -24px;
+  gap: 10px; min-width: 0;
+  padding: 0; border-radius: 0; background: none;
+  color: var(--texto); font-size: 24px;
+}
+.faixa .time-faixa.fora { --entrada-escudo: 24px; }
+.sigla-time-faixa { min-width: 0; white-space: nowrap; font-size: 24px; letter-spacing: .02em; }
+.moldura-escudo-faixa {
+  position: relative; flex: 0 0 78px; width: 78px; height: 78px;
+  display: grid; place-items: center; isolation: isolate;
+}
+.moldura-escudo-faixa::before {
+  content: ''; position: absolute; inset: 3px;
+  background: var(--cor); border-radius: 10px;
+  transform: rotate(-5deg); z-index: -1;
+}
+.time-faixa.fora .moldura-escudo-faixa::before { transform: rotate(5deg); }
+.selo-escudo-faixa {
+  position: absolute; inset: 7px;
+  display: grid; place-items: center;
+  border-radius: 7px; background: #f5f7fc;
+  box-shadow: 0 3px 9px rgba(0, 0, 0, .25);
+  overflow: hidden;
+}
+.imagem-escudo-faixa { width: 100%; height: 100%; object-fit: contain; padding: 5px; }
+.sigla-escudo-faixa { color: #18213a; font-size: 20px; letter-spacing: 0; }
+.time-faixa:not(.sem-escudo) .sigla-escudo-faixa { display: none; }
+.recorte-escudo-faixa {
+  position: absolute; inset: 0;
+  background: var(--logo-faixa, none) center / contain no-repeat;
+  opacity: 0; pointer-events: none; z-index: -1;
+}
+.sem-escudo .recorte-escudo-faixa { visibility: hidden; }
+.faixa.no-ar .moldura-escudo-faixa { animation: seloPlacar 560ms 100ms cubic-bezier(.16, 1, .3, 1) both; }
+.faixa.no-ar .time-faixa.fora .moldura-escudo-faixa { animation-delay: 190ms; }
+@keyframes seloPlacar {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Trocar a informação conserva os escudos no ar, sem piscar nem repetir a entrada. */
+.faixa.trocando .conteudo-faixa { opacity: 1; transform: none; }
+.faixa .rotulo-faixa, .faixa .valor-faixa, .faixa .trilho { transition: opacity 130ms ease, transform 130ms ease; }
+.faixa.trocando .rotulo-faixa, .faixa.trocando .valor-faixa, .faixa.trocando .trilho { opacity: 0; transform: translateY(4px); }
+
+/* Vidro: selo acetinado, que pousa e recebe um único reflexo. */
+[data-skin="vidro"] .moldura-escudo-faixa::before {
+  inset: 1px; transform: none;
+  background: rgba(255, 255, 255, .12); border: 1px solid rgba(255, 255, 255, .5); border-radius: 16px;
+}
+[data-skin="vidro"] .selo-escudo-faixa { border-radius: 11px; background: rgba(247, 249, 255, .96); }
+[data-skin="vidro"] .selo-escudo-faixa::after {
+  content: ''; position: absolute; inset: -20px auto -20px -40px; width: 24px;
+  background: rgba(255, 255, 255, .7); transform: skewX(-20deg); pointer-events: none;
+}
+[data-skin="vidro"] .faixa.no-ar .moldura-escudo-faixa { animation-name: seloVidro; }
+[data-skin="vidro"] .faixa.no-ar .selo-escudo-faixa::after { animation: seloReflexo 600ms 320ms ease-out both; }
+@keyframes seloVidro {
+  from { opacity: 0; transform: scale(.8); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes seloReflexo { from { translate: 0; } to { translate: 140px; } }
+
+/* Traço: cantoneiras finas desenham o espaço reservado ao clube. */
+[data-skin="traco"] .moldura-escudo-faixa::before {
+  inset: 0; background: none; border: 2px solid var(--cor);
+  border-right-color: transparent; border-bottom-color: transparent; border-radius: 0; transform: none;
+}
+[data-skin="traco"] .moldura-escudo-faixa::after {
+  content: ''; position: absolute; inset: 0;
+  border: 1px solid rgba(255, 255, 255, .8); border-left-color: transparent; border-top-color: transparent;
+  pointer-events: none;
+}
+[data-skin="traco"] .selo-escudo-faixa { inset: 9px; border-radius: 0; box-shadow: none; }
+[data-skin="traco"] .faixa.no-ar .moldura-escudo-faixa { animation: seloTraco 480ms 120ms ease-out both; }
+[data-skin="traco"] .faixa.no-ar .moldura-escudo-faixa::before { animation: seloRegua 420ms 100ms ease-out both; transform-origin: top left; }
+@keyframes seloTraco { from { opacity: 0; } to { opacity: 1; } }
+@keyframes seloRegua { from { scale: .3 1; } to { scale: 1; } }
+
+/* Bandeira: uma ampliação do brasão em cunha, por trás do selo de identificação. */
+[data-skin="bandeira"] .moldura-escudo-faixa { overflow: hidden; }
+[data-skin="bandeira"] .moldura-escudo-faixa::before {
+  inset: 0; border-radius: 0; transform: none;
+  clip-path: polygon(0 0, 100% 0, 72% 100%, 0 100%);
+}
+[data-skin="bandeira"] .recorte-escudo-faixa {
+  inset: -12px; opacity: .65; background-size: 112px;
+  clip-path: polygon(0 0, 100% 0, 65% 100%, 0 100%);
+}
+[data-skin="bandeira"] .selo-escudo-faixa { inset: 11px 10px; border-radius: 2px 10px 2px 10px; }
+[data-skin="bandeira"] .faixa.no-ar .moldura-escudo-faixa { animation: seloLateral 600ms 90ms cubic-bezier(.16, 1, .3, 1) both; }
+[data-skin="bandeira"] .faixa.no-ar .recorte-escudo-faixa { animation: seloCunha 580ms 100ms ease-out both; }
+@keyframes seloLateral {
+  from { opacity: 0; transform: translateX(var(--entrada-escudo)); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes seloCunha { from { translate: -30px; } to { translate: 0; } }
+
+/* Estádio: aro na cor do clube e luz que acende uma vez, sem piscar em loop. */
+[data-skin="estadio"] .moldura-escudo-faixa::before {
+  inset: 2px; background: none; border: 2px solid var(--cor); border-radius: 50%; transform: none;
+  box-shadow: 0 0 12px -3px var(--cor);
+}
+[data-skin="estadio"] .selo-escudo-faixa { inset: 9px; border-radius: 50%; }
+[data-skin="estadio"] .imagem-escudo-faixa { padding: 7px; }
+[data-skin="estadio"] .faixa.no-ar .moldura-escudo-faixa { animation: seloRefletor 650ms 80ms ease-out both; }
+@keyframes seloRefletor {
+  0% { opacity: 0; transform: scale(.92); }
+  60% { opacity: .6; }
+  100% { opacity: 1; transform: none; }
+}
+
+/* Cápsulas: medalhões e siglas em pastilhas, com um pequeno repique de entrada. */
+[data-skin="capsulas"] .moldura-escudo-faixa::before {
+  inset: 0; border-radius: 50%; transform: none; background: var(--cor);
+}
+[data-skin="capsulas"] .selo-escudo-faixa { inset: 5px; border-radius: 50%; background: #fffdf6; }
+[data-skin="capsulas"] .imagem-escudo-faixa { padding: 9px; }
+[data-skin="capsulas"] .sigla-time-faixa { padding: 5px 8px; border-radius: 20px; background: #0f100e; color: #f4f1e8; font-size: 22px; }
+[data-skin="capsulas"] .faixa.no-ar .moldura-escudo-faixa { animation: seloMedalhao 620ms 130ms cubic-bezier(.2, .9, .2, 1) both; }
+@keyframes seloMedalhao {
+  0% { opacity: 0; transform: translateY(14px) scale(.75) rotate(-12deg); }
+  65% { opacity: 1; transform: translateY(-3px) scale(1.03) rotate(3deg); }
+  100% { opacity: 1; transform: none; }
+}
+
+/* Costura: duas bandeirolas em sentidos opostos, com brasão ampliado e borda costurada. */
+[data-skin="costura"] .moldura-escudo-faixa { overflow: hidden; }
+[data-skin="costura"] .moldura-escudo-faixa::before {
+  inset: 0; transform: none; border-radius: 0;
+  clip-path: polygon(12% 0, 100% 0, 88% 100%, 0 100%);
+}
+[data-skin="costura"] .recorte-escudo-faixa {
+  inset: -14px; background-size: 110px; opacity: .35;
+  clip-path: polygon(20% 0, 100% 0, 80% 100%, 0 100%);
+}
+[data-skin="costura"] .moldura-escudo-faixa::after {
+  content: ''; position: absolute; inset: 0 6px 0 auto;
+  border-right: 2px dashed #fff9e9; transform: skewX(-7deg); pointer-events: none;
+}
+[data-skin="costura"] .time-faixa.fora .moldura-escudo-faixa::after { inset: 0 auto 0 6px; }
+[data-skin="costura"] .selo-escudo-faixa { inset: 9px 13px; border-radius: 4px; background: #fffdf6; }
+[data-skin="costura"] .sigla-time-faixa { border-bottom: 3px solid var(--cor); padding-bottom: 4px; }
+[data-skin="costura"] .faixa.no-ar .moldura-escudo-faixa { animation: seloLateral 580ms 120ms cubic-bezier(.16, 1, .3, 1) both; }
+
+/* Noturno: brasão duplicado em meia-luz e selo creme, como um recorte de cartaz. */
+[data-skin="noturno"] .moldura-escudo-faixa { overflow: hidden; }
+[data-skin="noturno"] .moldura-escudo-faixa::before {
+  inset: 0; border-radius: 2px; background: none; border-bottom: 3px solid var(--cor); transform: none;
+}
+[data-skin="noturno"] .recorte-escudo-faixa {
+  inset: -20px; opacity: .38; background-size: 116px;
+  clip-path: inset(0 48% 0 0);
+}
+[data-skin="noturno"] .time-faixa.fora .recorte-escudo-faixa { clip-path: inset(0 0 0 48%); }
+[data-skin="noturno"] .selo-escudo-faixa { inset: 11px; border-radius: 50%; background: #e8e2d2; }
+[data-skin="noturno"] .imagem-escudo-faixa { padding: 7px; }
+[data-skin="noturno"] .faixa.no-ar .moldura-escudo-faixa { animation: seloTraco 800ms 180ms ease-out both; }
+
+/* Diurno: fichas brancas com sombra de cor, que se encaixam pelas laterais. */
+[data-skin="diurno"] .moldura-escudo-faixa::before {
+  inset: 3px 0 7px 8px; border-radius: 0; background: var(--cor); transform: none;
+}
+[data-skin="diurno"] .selo-escudo-faixa { inset: 9px 7px 1px 1px; background: #fff; border: 1px solid #11141a; border-radius: 0; box-shadow: none; }
+[data-skin="diurno"] .sigla-time-faixa { color: #11141a; border-bottom: 4px solid var(--cor); padding-bottom: 4px; }
+[data-skin="diurno"] .faixa.no-ar .moldura-escudo-faixa { animation: seloFicha 550ms 80ms cubic-bezier(.16, 1, .3, 1) both; }
+@keyframes seloFicha {
+  from { opacity: 0; transform: translateX(var(--entrada-escudo)) rotate(-6deg); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Inclui a skin padrão, inclusive quando não há data-skin no documento. */
+@media (prefers-reduced-motion: reduce) {
+  .faixa, .faixa.no-ar, .faixa *, .faixa *::before, .faixa *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+  }
+}
