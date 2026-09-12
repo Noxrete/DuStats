@@ -130,14 +130,14 @@
 }
 .mapa-nome { font-size: 22px; font-weight: 700; text-transform: uppercase; }
 .mapa-total { margin-left: auto; font-size: 17px; color: var(--texto-fraco); }
-.mapa-total strong { color: #fff; font-size: 20px; }
+.mapa-total strong { color: var(--texto); font-size: 20px; }
 .mapa-campo { flex: 1 1 auto; min-height: 0; display: flex; justify-content: center; }
 .mapa-campo svg { height: 100%; max-height: 352px; }
 .mapa-nota {
   margin-top: 10px; font-size: 16px; color: var(--texto-fraco);
   min-height: 22px; letter-spacing: .02em;
 }
-.mapa-nota strong { color: #fff; font-size: 19px; }
+.mapa-nota strong { color: var(--texto); font-size: 19px; }
 .mapa-nota em { font-style: normal; opacity: .7; }
 
 .legenda, .legenda-pressao {
@@ -149,11 +149,11 @@
 
 .ponto {
   width: 15px; height: 15px; border-radius: 50%;
-  border: 2px solid var(--forcada, rgba(255, 255, 255, .8));
+  border: 2px solid var(--forcada, var(--texto));
   background: var(--forcada, transparent);
 }
-.ponto.gol { background: #fff; border-color: #fff; width: 18px; height: 18px; }
-.ponto.no_gol { background: rgba(255, 255, 255, .85); border-color: transparent; }
+.ponto.gol { background: var(--texto); border-color: var(--texto); width: 18px; height: 18px; }
+.ponto.no_gol { background: var(--texto); border-color: transparent; }
 .ponto.trave { background: none; border-style: dashed; }
 .ponto.fora { background: none; }
 .ponto.bloqueada { background: none; opacity: .5; width: 12px; height: 12px; }
@@ -228,3 +228,7 @@
   .slide.ativo .mapa { animation-duration: 1ms; animation-delay: 0ms; }
   .cena-painel, .painel-cheio, .subtitulo { transition-duration: 1ms; }
 }
+
+/* Correções de dados não repetem a entrada do slide que já está no ar. */
+.slide.atualizando .linha-comp,
+.slide.atualizando .mapa { animation: none !important; }

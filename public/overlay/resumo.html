@@ -26,6 +26,8 @@
     border-radius: 6px; padding: 13px 22px; cursor: pointer;
   }
   #exportar button:hover, #exportar a:hover { filter: brightness(1.4); }
+  #exportar button:disabled { opacity: .5; cursor: wait; }
+  #erroExportar { color: #ffcc55; font-size: 14px; max-width: 280px; }
   #previa { max-height: 150px; border-radius: 6px; border: 1px solid var(--linha); }
 </style>
 </head>
@@ -45,8 +47,9 @@
 </div>
 
 <div id="exportar">
-  <img id="previa" alt="Prévia do card">
-  <button id="btPng">Baixar PNG quadrado</button>
+  <img id="previa" alt="Prévia do card" hidden>
+  <span id="erroExportar" role="status" hidden></span>
+  <button id="btPng" disabled>Baixar PNG quadrado</button>
   <a href="/api/export/resumo.csv">Resumo CSV</a>
   <a href="/api/export/eventos.csv">Lances CSV</a>
   <a href="/api/export/partida.json">Backup JSON</a>
@@ -62,36 +65,59 @@
 <script>
 'use strict';
 
+const exportando = DuStats.overlay.parametros.get('exportar') === '1';
 DuStats.carrossel.iniciar({
   modo: 'resumo',
   painel: document.getElementById('painel'),
-  titulo: () => 'Fim de jogo'
+  titulo: () => 'Fim de jogo',
+  sempreVisivel: exportando
 });
 
-if (DuStats.overlay.parametros.get('exportar') === '1') {
+if (exportando) {
   document.body.classList.add('com-exportacao');
-  // Fora do OBS o painel deve aparecer mesmo que a transmissão esteja noutro
-  // modo — senão o operador abre a página para exportar e vê a tela preta.
-  document.getElementById('painel').classList.add('no-ar');
+  let assinatura = null;
+  let geracao = 0;
+  let baixando = false;
+  const erro = document.getElementById('erroExportar');
+  const previa = document.getElementById('previa');
+  const botao = document.getElementById('btPng');
 
-  let cartaoPronto = false;
   DuStats.aoEstado(async (estado) => {
-    if (cartaoPronto) return;
-    cartaoPronto = true;
-    const canvas = await DuStats.cartao.desenhar(estado, { titulo: 'Fim de jogo' });
-    document.getElementById('previa').src = canvas.toDataURL('image/png');
-    if (!document.querySelector('.slide.ativo')) {
-      DuStats.paineis.comparativo(document.querySelector('.slide'), estado);
-      document.querySelector('.slide').classList.add('ativo');
-      document.querySelector('[data-cabecalho]').innerHTML =
-        DuStats.paineis.cabecalho(estado, 'Fim de jogo · Comparativo');
+    botao.disabled = baixando;
+    const atual = JSON.stringify([estado.id, estado.config, estado.placar,
+      estado.comparativo, estado.linhaDoTempo, estado.criadaEm]);
+    if (atual === assinatura) return;
+    assinatura = atual;
+    const minhaGeracao = ++geracao;
+    previa.hidden = true;
+    erro.hidden = true;
+    try {
+      const canvas = await DuStats.cartao.desenhar(estado, { titulo: 'Fim de jogo' });
+      if (minhaGeracao !== geracao) return;
+      previa.src = canvas.toDataURL('image/png');
+      previa.hidden = false;
+    } catch {
+      if (minhaGeracao !== geracao) return;
+      assinatura = null;
+      erro.textContent = 'Não foi possível gerar a prévia. Confira os escudos e tente novamente.';
+      erro.hidden = false;
     }
   });
 
-  document.getElementById('btPng').addEventListener('click', () => {
-    DuStats.cartao.baixar(DuStats.estado(), { titulo: 'Fim de jogo' });
+  botao.addEventListener('click', async () => {
+    const estado = DuStats.estado();
+    if (!estado || baixando) return;
+    baixando = true;
+    botao.disabled = true;
+    erro.hidden = true;
+    try { await DuStats.cartao.baixar(estado, { titulo: 'Fim de jogo' }); }
+    catch {
+      erro.textContent = 'Não foi possível baixar o PNG. Confira os escudos e tente novamente.';
+      erro.hidden = false;
+    } finally { baixando = false; botao.disabled = false; }
   });
 }
+
 </script>
 </body>
 </html>

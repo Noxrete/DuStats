@@ -1,0 +1,47 @@
+name: Publicar release Windows
+
+on:
+  push:
+    branches: [codex/bughunt-skins]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: DuStats v1.0.1
+    if: github.ref == 'refs/heads/codex/bughunt-skins'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v5
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Gerar DuStats.exe
+        run: npm run exe
+
+      - name: Criar a release e anexar o executável
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view v1.0.1 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create v1.0.1 \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "DuStats v1.0.1 — correções das skins" \
+              --notes "Release do DuStats para Windows.
+
+          Inclui as nove skins, correções de contraste, atualização dos painéis durante a transmissão, prévia PNG sincronizada e recuperação da inicialização quando a enumeração de rede falha.
+
+          O executável Windows foi gerado pela CI em Ubuntu com Node.js 22 e empacotado para win-x64. Consulte o PR #2 e docs/BUGHUNT-SKINS.md para os detalhes do bughunt."
+          fi
+          gh release upload v1.0.1 build/DuStats.exe \
+            --repo "$GITHUB_REPOSITORY" \
+            --clobber

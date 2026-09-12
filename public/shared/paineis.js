@@ -52,7 +52,7 @@
 
   // ----------------------------------------------------------- comparativo
 
-  function comparativo(container, estado) {
+  function comparativo(container, estado, { animar = true } = {}) {
     const linhas = estado.comparativo;
 
     container.innerHTML = `<div class="comparativo">${linhas.map((linha, indice) => {
@@ -71,8 +71,8 @@
           <div>
             <div class="rotulo-linha">${linha.rotulo}</div>
             <div class="trilho ${total === 0 ? 'vazio' : ''}">
-              <span class="casa" data-largura="${fatiaCasa}" style="width:0%"></span>
-              <span class="fora" data-largura="${100 - fatiaCasa}" style="width:0%"></span>
+              <span class="casa" data-largura="${fatiaCasa}" style="width:${animar ? 0 : fatiaCasa}%"></span>
+              <span class="fora" data-largura="${100 - fatiaCasa}" style="width:${animar ? 0 : 100 - fatiaCasa}%"></span>
             </div>
           </div>
           <div class="valor dir num ${lider === 'fora' ? 'lider-fora' : ''}">${linha.fora}${sufixo}</div>
@@ -81,7 +81,7 @@
 
     // As barras nascem em zero e crescem — é a animação que transforma uma
     // tabela de números numa peça de transmissão.
-    requestAnimationFrame(() => {
+    if (animar) requestAnimationFrame(() => {
       for (const barra of container.querySelectorAll('.trilho span')) {
         barra.style.width = `${barra.dataset.largura}%`;
       }
@@ -100,7 +100,7 @@
     bloqueada: { rotulo: 'Bloqueada', raio: 1.5, preenche: false, aro: false, opacidade: 0.5 }
   };
 
-  function mapaDeChutes(container, estado) {
+  function mapaDeChutes(container, estado, { animar = true } = {}) {
     const { overlay, campo } = global.DuStats;
 
     container.innerHTML = `<div class="mapas">${['casa', 'fora'].map((lado) => `
@@ -142,7 +142,7 @@
         });
         if (estilo.tracejado) ponto.setAttribute('stroke-dasharray', '1.4 1');
         // Entram um a um, do primeiro ao último chute do tempo.
-        ponto.style.animation = `surgirPonto 320ms ease-out ${indice * 55}ms both`;
+        if (animar) ponto.style.animation = `surgirPonto 320ms ease-out ${indice * 55}ms both`;
         desenho.appendChild(ponto);
       });
 
@@ -168,7 +168,7 @@
 
   // ----------------------------------------------------------- pressão
 
-  function pressao(container, estado) {
+  function pressao(container, estado, { animar = true } = {}) {
     const bins = estado.momentum;
     const L = 1440;
     const A = 460;
@@ -192,10 +192,10 @@
       const x = (minuto / 5) * larguraBin;
       grafico.appendChild(el('line', {
         x1: x, y1: 10, x2: x, y2: A - 30,
-        stroke: 'rgba(255,255,255,.1)', 'stroke-width': 1, 'stroke-dasharray': '4 6'
+        stroke: 'var(--linha)', 'stroke-width': 1, 'stroke-dasharray': '4 6'
       }));
       rotulos.push(texto(`${minuto}'`, {
-        x, y: A - 6, fill: 'rgba(255,255,255,.4)', 'font-size': 21, 'text-anchor': 'middle'
+        x, y: A - 6, fill: 'var(--texto-fraco)', 'font-size': 21, 'text-anchor': 'middle'
       }));
     }
 
@@ -214,14 +214,14 @@
           fill: `var(--cor-${lado})`,
           opacity: 0.92
         });
-        barra.style.animation = `crescerBarra 520ms cubic-bezier(.22,1,.36,1) ${i * 45}ms both`;
+        if (animar) barra.style.animation = `crescerBarra 520ms cubic-bezier(.22,1,.36,1) ${i * 45}ms both`;
         barra.style.transformOrigin = `center ${meio}px`;
         grafico.appendChild(barra);
       }
     });
 
     grafico.appendChild(el('line', {
-      x1: 0, y1: meio, x2: L, y2: meio, stroke: 'rgba(255,255,255,.5)', 'stroke-width': 2
+      x1: 0, y1: meio, x2: L, y2: meio, stroke: 'var(--texto-fraco)', 'stroke-width': 2
     }));
     for (const rotulo of rotulos) grafico.appendChild(rotulo);
 
@@ -245,7 +245,7 @@
 
   // ---------------------------------------------------------- linha do tempo
 
-  function linhaDoTempo(container, estado) {
+  function linhaDoTempo(container, estado, { animar = true } = {}) {
     const itens = estado.linhaDoTempo;
     if (itens.length === 0) {
       container.innerHTML = '<p class="vazio">Nenhum gol ou cartão até aqui.</p>';
@@ -261,13 +261,13 @@
     const grafico = svg({ viewBox: `0 0 ${L} ${A}`, class: 'grafico-tempo' });
     grafico.appendChild(el('line', {
       x1: 30, y1: meio, x2: L - 30, y2: meio,
-      stroke: 'rgba(255,255,255,.25)', 'stroke-width': 3, 'stroke-linecap': 'round'
+      stroke: 'var(--texto-fraco)', 'stroke-width': 3, 'stroke-linecap': 'round'
     }));
 
     for (let minuto = 15; minuto <= fimMs / 60000; minuto += 15) {
       const x = posicao(minuto * 60000);
-      grafico.appendChild(el('line', { x1: x, y1: meio - 9, x2: x, y2: meio + 9, stroke: 'rgba(255,255,255,.3)', 'stroke-width': 2 }));
-      grafico.appendChild(texto(`${minuto}'`, { x, y: A - 6, fill: 'rgba(255,255,255,.35)', 'font-size': 20, 'text-anchor': 'middle' }));
+      grafico.appendChild(el('line', { x1: x, y1: meio - 9, x2: x, y2: meio + 9, stroke: 'var(--texto-fraco)', 'stroke-width': 2 }));
+      grafico.appendChild(texto(`${minuto}'`, { x, y: A - 6, fill: 'var(--texto-fraco)', 'font-size': 20, 'text-anchor': 'middle' }));
     }
 
     itens.forEach((item, indice) => {
@@ -275,7 +275,7 @@
       const acima = item.equipe === 'casa';
       const y = acima ? meio - 66 : meio + 66;
       const grupo = el('g', {});
-      grupo.style.animation = `surgirPonto 340ms ease-out ${indice * 90}ms both`;
+      if (animar) grupo.style.animation = `surgirPonto 340ms ease-out ${indice * 90}ms both`;
 
       grupo.appendChild(el('line', {
         x1: x, y1: meio, x2: x, y2: acima ? y + 20 : y - 20,
@@ -295,7 +295,7 @@
 
       grupo.appendChild(texto(`${item.minuto}'${item.contra ? ' (c)' : ''}`, {
         x, y: acima ? y - 34 : y + 46,
-        fill: '#fff', 'font-size': 23, 'font-weight': 700, 'text-anchor': 'middle'
+        fill: 'var(--texto)', 'font-size': 23, 'font-weight': 700, 'text-anchor': 'middle'
       }));
       grafico.appendChild(grupo);
     });

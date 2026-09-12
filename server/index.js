@@ -97,8 +97,11 @@ const wss = ws.ligar(servidor);
 // ---------------------------------------------------------------- transmissão
 
 function enderecosLan() {
+  let mapaInterfaces;
+  try { mapaInterfaces = os.networkInterfaces(); }
+  catch { return []; } // O painel local funciona mesmo sem conseguir enumerar a rede.
   const enderecos = [];
-  for (const interfaces of Object.values(os.networkInterfaces())) {
+  for (const interfaces of Object.values(mapaInterfaces)) {
     for (const iface of interfaces || []) {
       if (iface.family !== 'IPv4' || iface.internal) continue;
       // 169.254.x.x é o endereço que o Windows inventa quando não conseguiu IP
