@@ -16,7 +16,17 @@ const path = require('node:path');
  */
 
 const raiz = path.join(__dirname, '..');
-const ler = (p) => fs.readFileSync(path.join(raiz, p), 'utf8');
+/**
+ * Os fontes são lidos com as quebras de linha NORMALIZADAS.
+ *
+ * O Windows faz checkout com CRLF, e um teste que casa `\{\n` contra `{\r\n`
+ * falha lá e passa aqui — foi exatamente assim que este arquivo quebrou na CI
+ * do Windows na primeira vez. Pior: só UM dos padrões quebrou, porque o `$` do
+ * JavaScript em modo multilinha aceita `\r` como fim de linha, mas um `\n`
+ * literal não. O teste é sobre a estrutura do código; a quebra de linha do
+ * checkout não faz parte dela.
+ */
+const ler = (p) => fs.readFileSync(path.join(raiz, p), 'utf8').replace(/\r\n/g, '\n');
 
 const social = ler('public/shared/social.js');
 const app = ler('public/control/app.js');
